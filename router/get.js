@@ -4,6 +4,7 @@ const router = express.Router();
 const path = require("path");
 const axios = require("axios");
 const { insertData } = require("../router/database");
+const { publishModel } = require("../router/post");
 
 const {
   forge_urn,
@@ -36,7 +37,10 @@ router.get("/hubs", async (req, res) => {
     },
   });
   const projects = hub_Projects.data.data;
-  const projectsName = projects[0].attributes.name; //ONLY for 1 project otherwaies you most loop
+  const projectsName = projects[0].attributes.name;
+  console.log(projectsName);
+
+  //ONLY for 1 project otherwaies you most loop
 
   const folders = await Promise.all(
     projects.map((project) => {
@@ -66,8 +70,6 @@ router.get("/hubs", async (req, res) => {
   const userMetaData = new User();
   const users = await userMetaData.userInfo(projectId);
 
-  res.send(users);
-
   const foldersContentPromises = result.map((folder) => {
     return api
       .fetchContent(projectId, folder.id)
@@ -75,8 +77,23 @@ router.get("/hubs", async (req, res) => {
   });
 
   const foldersContent = await Promise.all(foldersContentPromises);
+  const originalItemUrns = foldersContent
+    .map((itemUrn) => {
+      return itemUrn.attributes.extension.data.originalItemUrn;
+    })
+    .filter((itemUrns) => {
+      if (itemUrns == null) {
+        return false;
+      } else {
+        return true;
+      }
+    });
+  await publishModel(projectId, originalItemUrns[1]);
+  res.send(originalItemUrns);
+  return;
+  // res.send(originalItemUrns);
 
-  //  res.send(derivativesIds);
+  // res.send(derivativesIds);
   const metaDataApi = new MetaData();
   const guids = await metaDataApi.fetchMetadata(foldersContent);
   const properties = await metaDataApi.fetchProperties(guids);
@@ -191,7 +208,8 @@ class FolderApi {
       // const id = project[0];
       // const urn = project[1].id;
       const [id, { id: urn }] = project;
-      return this.fetchContent(id, urn).then((content) => content.data); //calling
+      return this.fetchContent(id, urn).then((content) => content.data);
+      //calling
     });
 
     const result = await Promise.all(promises);
