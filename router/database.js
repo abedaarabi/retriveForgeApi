@@ -41,7 +41,7 @@ function insertData({ project, objects, objectElements, users }) {
   //     // insert();
   //   }
   // );
-  // insert();
+  insert();
   function insert() {
     const err = "externalId are exist";
 

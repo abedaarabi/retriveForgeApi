@@ -23,7 +23,7 @@ const {
   forge_download,
 } = process.env;
 
-router.get("/", (req, res) => {
+router.get("/", (_req, res) => {
   const indexFilePath = path.resolve(__dirname, "../client/index.html");
   res.sendFile(indexFilePath);
 });
@@ -66,7 +66,7 @@ function delay(ms) {
 //   })
 // );
 
-router.get("/hubs", async (req, res) => {
+router.get("/hubs", async (_req, res) => {
   const response = await axios.get(`${hub}`, {
     headers: {
       Authorization: `Bearer ${TOKEN}`,
@@ -82,17 +82,15 @@ router.get("/hubs", async (req, res) => {
 
   const projects = hub_Projects.data.data;
 
-  console.log("start");
-
   //ONLY for 1 project otherwaies you most loop
 
   const folders = await Promise.all(
     projects.map((project) => {
       const projectId = project.id;
-      // console.log({ projectId });
+      console.log(projectId);
 
+      //********************************** Top Folder
       const topFolder = `${hub}/${moeHub_id}/projects/${projectId}/topFolders`;
-      console.log(topFolder);
       const top = axios
         .get(topFolder, {
           headers: {
@@ -103,17 +101,15 @@ router.get("/hubs", async (req, res) => {
         .catch(() => [projectId, []]); //if there are error returen empty
       return top.then((e) => [
         projectId,
-        e.data.data.find((folder) => folder.attributes.name !== "Plans"),
+        e.data.data.find(
+          (folder) => folder.attributes.name === "Project Files"
+        ),
       ]);
     })
   );
-
+  //******************************* Folder Contents
   const api = new FolderApi();
   const result = await api.fetchFolderContents(folders);
-
-  console.log(result);
-  /************* USER INFORMATION class *************** */
-
   const foldersContentPromises = [];
   result.forEach(([projectId, folders]) => {
     const tmp = folders.map((folder) => {
@@ -131,6 +127,7 @@ router.get("/hubs", async (req, res) => {
     (item) => item
   );
 
+  /*
   const originalItemUrns = foldersContent
     .map(([projectId, itemUrn]) => {
       console.log(itemUrn.attributes.extension.data.originalItemUrn);
@@ -145,7 +142,7 @@ router.get("/hubs", async (req, res) => {
       publishModel(projectId, originalItemUrn)
     )
   );
-
+  
   // make sure all projects been translated
   let allStatus;
 
@@ -201,10 +198,12 @@ router.get("/hubs", async (req, res) => {
       return data === "PROCESSING_COMPLETE";
     });
     console.log(allItemStatus);
-  }
+  }*/
   // res.send(allStatus);
 
   // res.send(originalItemUrns);
+
+  //***************************** User Information
   const userMetaData = new User();
 
   const usersNested = await Promise.all(
@@ -217,65 +216,73 @@ router.get("/hubs", async (req, res) => {
   usersNested.forEach((nestedUser) => {
     users.push(...nestedUser);
   });
-
-  console.log(users);
-
-  // res.send(users);
+  // **************************** Classes
 
   const metaDataApi = new MetaData();
   const guids = await metaDataApi.fetchMetadata(foldersContent);
   const properties = await metaDataApi.fetchProperties(guids);
 
+  const regex = /\w+\K[0-9]{2,3}_F[0-9]{1,3}.*?\.rvt/gi;
+
+  // function objectName(b) {
+  //   return properties.find((property) => property.attributes.name === b);
+  // }
   function objectName(b) {
-    return properties.find((property) => property.attributes.name === b);
+    return properties.filter((property) => property.attributes.name == b);
   }
 
-  const structureElement = objectName("LLYN.B357_K09_F2_N01.rvt");
-  const mepElement = objectName("LLYN.B357_K08_F02_N900.rvt");
-  const elElement = objectName("LLYN.B357_K07_F02_N01.rvt");
-  const archElement = objectName("LLYN.B357_K01_F02_N01.rvt");
+  // const foo = objectName(regex);
+  // console.log(foo);
+
+  const structureElement = objectName("LLYN_B357_K09_F2_N01.rvt")[0];
+  // const mepElement = objectName(regex);
+  // const elElement = objectName(regex);
+  // const archElement = objectName(regex);
+  console.log(structureElement);
 
   let timeDate = new Date();
 
   const formattedProjects = projects.map((project) => ({
     projectName: project.attributes.name,
+
     projectId: project.id,
   }));
+  console.log(formattedProjects);
 
   const objects = [
     {
-      projectId: archElement.attributes.projectId,
+      projectId: structureElement.attributes.projectId,
       id: structureElement.attributes.id,
       name: structureElement.attributes.displayName,
     },
-    {
-      projectId: archElement.attributes.projectId,
-      id: elElement.attributes.id,
-      name: elElement.attributes.displayName,
-    },
-    {
-      projectId: archElement.attributes.projectId,
-      id: mepElement.attributes.id,
-      name: mepElement.attributes.displayName,
-    },
+    // {
+    //   projectId: archElement.attributes.projectId,
+    //   id: elElement.attributes.id,
+    //   name: elElement.attributes.displayName,
+    // },
+    // {
+    //   projectId: archElement.attributes.projectId,
+    //   id: mepElement.attributes.id,
+    //   name: mepElement.attributes.displayName,
+    // },
 
-    {
-      projectId: archElement.attributes.projectId,
-      id: archElement.attributes.id,
-      name: archElement.attributes.displayName,
-    },
+    // {
+    //   projectId: archElement.attributes.projectId,
+    //   id: archElement.attributes.id,
+    //   name: archElement.attributes.displayName,
+    // },
   ];
-
-  console.log(objects);
 
   //const walls = wallOpject.properties.collection;
   const objectElements = [];
-  const regex = /K[0-9]{2,3}_F[0-9]{1,3}.*?\.rvt/gi;
-  await delay(15000);
+
+  // await delay(15000);
   properties
-    .filter((property) => property.attributes.name.match(regex))
+    .filter(
+      (property) => property.attributes.name == "LLYN_B357_K09_F2_N01.rvt"
+    )
     .forEach((property) => {
-      console.log(property.attributes.name);
+      // console.log("hereeeeeeeeeeeeeeeeeeee", property.attributes.name);
       // console.log(property.attributes);
       //["Identity Data"]["Type Name"];
       property.properties.collection.forEach((item) => {
@@ -283,7 +290,7 @@ router.get("/hubs", async (req, res) => {
 
         const elementsId = item.externalId;
 
-        function elementsType(x, y, z) {
+        function elementsType(_x, y, z) {
           let boo = item.properties;
           if (boo && boo[y]) {
             return boo[y][z];
@@ -397,7 +404,7 @@ class MetaData {
     const data = await Promise.all(
       guids.map(([urn, guid, attributes]) => {
         const url = `https://developer.api.autodesk.com/modelderivative/v2/designdata/${urn}/metadata/${guid}/properties?forceget=true`;
-        console.log(url);
+        // console.log(url);
         const contents = axios
           .get(url, {
             headers: {
@@ -407,7 +414,7 @@ class MetaData {
           .catch((e) => e);
         return contents.then((response) => ({
           attributes,
-          properties: console.log(response.data.data) || response.data.data,
+          properties: response.data.data,
         }));
         // .then((data) => console.log(data));
       })
