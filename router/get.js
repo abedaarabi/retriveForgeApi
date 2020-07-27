@@ -127,7 +127,6 @@ router.get("/hubs", async (_req, res) => {
     (item) => item
   );
 
-  /*
   const originalItemUrns = foldersContent
     .map(([projectId, itemUrn]) => {
       console.log(itemUrn.attributes.extension.data.originalItemUrn);
@@ -142,7 +141,7 @@ router.get("/hubs", async (_req, res) => {
       publishModel(projectId, originalItemUrn)
     )
   );
-  
+
   // make sure all projects been translated
   let allStatus;
 
@@ -166,6 +165,7 @@ router.get("/hubs", async (_req, res) => {
     allStatus = translatesStatus.every((data) => {
       console.log(data);
       if (!data || !data.attributes) return false;
+      // else if (data == null) console.log("Model Needs Publishing ");
       return data.attributes.status === "complete";
     });
     console.log(allStatus);
@@ -176,7 +176,7 @@ router.get("/hubs", async (_req, res) => {
 
   while (!allItemStatus) {
     console.log("waiting for to complete");
-    await delay(30000);
+    await delay(6000);
     const translatesStatus = await Promise.all(
       originalItemUrns.map(([projectId, originalItemUrn]) => {
         // console.log("testfgsdjhgdas", projectId, originalItemUrn);
@@ -185,6 +185,7 @@ router.get("/hubs", async (_req, res) => {
             (response) =>
               response.data.included[0].attributes.extension.data.processState
           )
+
           .catch((err) => {
             console.log(err);
             return [];
@@ -195,11 +196,13 @@ router.get("/hubs", async (_req, res) => {
     // translateStatus.push({ attributes: { status: "notyet" } });
 
     allItemStatus = translatesStatus.every((data) => {
+      console.log(data);
       return data === "PROCESSING_COMPLETE";
     });
+
     console.log(allItemStatus);
-  }*/
-  // res.send(allStatus);
+  }
+  res.send(allStatus);
 
   // res.send(originalItemUrns);
 
@@ -276,43 +279,50 @@ router.get("/hubs", async (_req, res) => {
   //const walls = wallOpject.properties.collection;
   const objectElements = [];
 
-  // await delay(15000);
-  properties
-    .filter(
-      (property) => property.attributes.name == "LLYN_B357_K09_F2_N01.rvt"
-    )
-    .forEach((property) => {
-      // console.log("hereeeeeeeeeeeeeeeeeeee", property.attributes.name);
-      // console.log(property.attributes);
-      //["Identity Data"]["Type Name"];
-      property.properties.collection.forEach((item) => {
-        //****************bug (collection)
+  await delay(25000);
 
-        const elementsId = item.externalId;
+  try {
+    properties
+      .filter(
+        (property) => property.attributes.name == "LLYN_B357_K09_F2_N01.rvt"
+      )
+      .forEach((property) => {
+        // console.log("hereeeeeeeeeeeeeeeeeeee", property.attributes.name);
+        // console.log(property.attributes);
+        //["Identity Data"]["Type Name"];
+        property.properties.collection.forEach((item) => {
+          //****************bug (collection)
 
-        function elementsType(_x, y, z) {
-          let boo = item.properties;
-          if (boo && boo[y]) {
-            return boo[y][z];
+          const elementsId = item.externalId;
+
+          function elementsType(_x, y, z) {
+            let boo = item.properties;
+            if (boo && boo[y]) {
+              return boo[y][z];
+            }
           }
-        }
 
-        const typesName = elementsType(item, "Identity Data", "Type Name");
-        // const abed = name(item, "Construction", "Function");
+          const typesName = elementsType(item, "Identity Data", "Type Name");
+          // const abed = name(item, "Construction", "Function");
 
-        const itemElement = {
-          name: item.name,
-          TypeName: typesName,
-          objectId: property.attributes.id,
-          time: timeDate,
-          externalId: item.externalId,
-        };
-        objectElements.push(itemElement);
+          const itemElement = {
+            name: item.name,
+            TypeName: typesName,
+            objectId: property.attributes.id,
+            time: timeDate,
+            externalId: item.externalId,
+          };
+          objectElements.push(itemElement);
+        });
       });
-    });
+
+    insertData({ projects: formattedProjects, objects, objectElements, users });
+    res.send(objectElements);
+  } catch (error) {
+    console.log(error);
+  }
+
   // function to instert the data to MySQL
-  insertData({ projects: formattedProjects, objects, objectElements, users });
-  res.send(objectElements);
 });
 
 class User {
