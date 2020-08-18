@@ -10,6 +10,7 @@ const {
   translationStatus,
 } = require("../router/post");
 const { reset } = require("nodemon");
+const { log } = require("console");
 
 const {
   forge_urn,
@@ -142,12 +143,12 @@ router.get("/hubs", async (_req, res) => {
     )
   );
 
-  // make sure all projects been translated
+  // // make sure all projects been translated
   let allStatus;
 
   while (!allStatus) {
     console.log("waiting for it to start");
-    await delay(30000);
+    await delay(1000);
     const translatesStatus = await Promise.all(
       originalItemUrns.map(([projectId, originalItemUrn]) => {
         // console.log("testfgsdjhgdas", projectId, originalItemUrn);
@@ -176,7 +177,7 @@ router.get("/hubs", async (_req, res) => {
 
   while (!allItemStatus) {
     console.log("waiting for to complete");
-    await delay(6000);
+    await delay(1000);
     const translatesStatus = await Promise.all(
       originalItemUrns.map(([projectId, originalItemUrn]) => {
         // console.log("testfgsdjhgdas", projectId, originalItemUrn);
@@ -196,16 +197,13 @@ router.get("/hubs", async (_req, res) => {
     // translateStatus.push({ attributes: { status: "notyet" } });
 
     allItemStatus = translatesStatus.every((data) => {
-      console.log(data);
       return data === "PROCESSING_COMPLETE";
     });
 
     console.log(allItemStatus);
   }
-  res.send(allStatus);
-
-  // res.send(originalItemUrns);
-
+  // res.send(allStatus);
+  // return;
   //***************************** User Information
   const userMetaData = new User();
 
@@ -279,9 +277,25 @@ router.get("/hubs", async (_req, res) => {
   //const walls = wallOpject.properties.collection;
   const objectElements = [];
 
-  await delay(25000);
-
+  let allNonEmpty;
   try {
+    while (true) {
+      const metaDataApi = new MetaData();
+      const guids = await metaDataApi.fetchMetadata(foldersContent);
+      const properties = await metaDataApi.fetchProperties(guids);
+
+      allNonEmpty = properties
+        .filter(
+          (property) => property.attributes.name == "LLYN_B357_K09_F2_N01.rvt"
+        )
+        .every((property) => property.properties !== undefined);
+      console.log(">>>>>>>>>>>>>>>>>>>>> ", allNonEmpty);
+      if (allNonEmpty) {
+        break;
+      }
+
+      await delay(20000);
+    }
     properties
       .filter(
         (property) => property.attributes.name == "LLYN_B357_K09_F2_N01.rvt"
@@ -290,6 +304,7 @@ router.get("/hubs", async (_req, res) => {
         // console.log("hereeeeeeeeeeeeeeeeeeee", property.attributes.name);
         // console.log(property.attributes);
         //["Identity Data"]["Type Name"];
+
         property.properties.collection.forEach((item) => {
           //****************bug (collection)
 
@@ -301,7 +316,7 @@ router.get("/hubs", async (_req, res) => {
               return boo[y][z];
             }
           }
-
+          console.log(item);
           const typesName = elementsType(item, "Identity Data", "Type Name");
           // const abed = name(item, "Construction", "Function");
 
@@ -316,12 +331,18 @@ router.get("/hubs", async (_req, res) => {
         });
       });
 
-    insertData({ projects: formattedProjects, objects, objectElements, users });
-    res.send(objectElements);
+    console.log(":::Data Inserted::::");
   } catch (error) {
     console.log(error);
   }
+  res.send(objectElements);
 
+  insertData({
+    projects: formattedProjects,
+    objects,
+    objectElements,
+    users,
+  });
   // function to instert the data to MySQL
 });
 
@@ -396,9 +417,12 @@ class MetaData {
           })
           .catch((e) => e);
         return contents.then((response) => {
-          const metadaEntry = response.data.data.metadata.find(
+          let metadaEntry;
+
+          metadaEntry = response.data.data.metadata.find(
             (metadata) => metadata.role === "3d"
           );
+
           return [
             id,
             metadaEntry && metadaEntry.guid,
@@ -407,6 +431,7 @@ class MetaData {
         });
       })
     );
+
     return guids.filter((guid) => guid[1]);
   }
 

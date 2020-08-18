@@ -9,12 +9,24 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.19.2",
     "body-parser": "^1.19.0",
     "dotenv": "^8.2.0",
+    "express": "^4.17.1",
     "forever": "^3.0.0",
     "forge-apis": "^0.7.3",
     "multer": "^1.4.2",
     "mysql": "^2.18.1",
-    "nodemon": "^2.0.4"
-  }
+    "nodemon": "^2.0.4",
+    "path": "^0.12.7"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abedaarabi/retriveForgeApi.git"
+  },
+  "bugs": {
+    "url": "https://github.com/abedaarabi/retriveForgeApi/issues"
+  },
+  "homepage": "https://github.com/abedaarabi/retriveForgeApi#readme"
 }
