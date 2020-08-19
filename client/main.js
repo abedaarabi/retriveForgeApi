@@ -1,11 +1,13 @@
 const btn = document.querySelector("#btn");
 
 document.getElementById("loan-form").addEventListener("click", function (e) {
-  document.getElementById("loading").style.display = "block";
+  if (e.target.classList.contains("btn-danger")) {
+    document.getElementById("loading").style.display = "block";
 
-  setTimeout(loading, 5 * 1000);
+    setTimeout(loading, 3 * 60 * 1000);
 
-  e.preventDefault();
+    e.preventDefault();
+  }
 });
 
 async function loading() {
@@ -21,7 +23,7 @@ async function showcomlete() {
   node.appendChild(textnode); // Append the text to <li>
   document.getElementById("myList").appendChild(node);
 
-  await removeElement("myList");
+  // await removeElement("myList");
 }
 
 btn.addEventListener("click", async (e) => {
