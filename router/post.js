@@ -4,8 +4,11 @@ const router = express.Router();
 const path = require("path");
 const axios = require("axios");
 
-const { TOKEN } = process.env;
+const {} = process.env;
+const { getStoredToken } = require("./oauth");
+const myToken = getStoredToken();
 
+const TOKEN = myToken.access_token;
 //Post job
 
 async function publishModel(projectId, urnId) {

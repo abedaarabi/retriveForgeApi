@@ -2,6 +2,7 @@ const dotenv = require("dotenv");
 const result = dotenv.config();
 const mysql = require("mysql");
 const helper = require("../app");
+// const loading = require("../client/main");
 
 const { sqlPassword } = process.env;
 
@@ -60,7 +61,6 @@ function insertData({ project, objects, objectElements, users }) {
 
     objectElements.map((element) => {
       con.query("INSERT INTO elements SET ?", element, function (err, result) {
-        console.log(result);
         // console.log("1 record inserted in element");
       });
     });

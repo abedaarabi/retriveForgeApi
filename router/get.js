@@ -11,7 +11,12 @@ const {
 } = require("../router/post");
 const { reset } = require("nodemon");
 const { log } = require("console");
+const { getStoredToken } = require("./oauth");
 
+const myToken = getStoredToken();
+
+const TOKEN = myToken.access_token;
+console.log(TOKEN);
 const {
   forge_urn,
   hub_id,
@@ -19,7 +24,7 @@ const {
   issue_ID,
   forge_host,
   forge,
-  TOKEN,
+
   refreshtoken,
   forge_download,
 } = process.env;
@@ -27,6 +32,12 @@ const {
 router.get("/", (_req, res) => {
   const indexFilePath = path.resolve(__dirname, "../client/index.html");
   res.sendFile(indexFilePath);
+});
+
+router.get("/data", (req, res) => {
+  //fetch data from database
+
+  res.send({ hello: "younes" });
 });
 
 function delay(ms) {
@@ -68,6 +79,10 @@ function delay(ms) {
 // );
 
 router.get("/hubs", async (_req, res) => {
+  const myToken = getStoredToken();
+
+  const TOKEN = myToken.access_token;
+
   const response = await axios.get(`${hub}`, {
     headers: {
       Authorization: `Bearer ${TOKEN}`,
@@ -317,7 +332,7 @@ router.get("/hubs", async (_req, res) => {
               return boo[y][z];
             }
           }
-          console.log(item);
+          // console.log(item);
           const typesName = elementsType(item, "Identity Data", "Type Name");
           // const abed = name(item, "Construction", "Function");
 

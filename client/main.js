@@ -1,25 +1,36 @@
 const btn = document.querySelector("#btn");
 
 document.getElementById("loan-form").addEventListener("click", function (e) {
-  if (e.target.classList.contains("btn-danger")) {
+  if (e.target.classList.contains("btn-success")) {
     document.getElementById("loading").style.display = "block";
+    //fetch call new route
 
-    setTimeout(loading, 3 * 60 * 1000);
+    // setTimeout(loading, 1000);
 
     e.preventDefault();
   }
 });
 
-async function loading() {
-  document.getElementById("loading").remove();
-  await showcomlete();
+function removeLoading(c) {
+  document.getElementById(c).remove();
 }
 
-async function showcomlete() {
+function showcomlete() {
   const node = document.createElement("div");
   node.classList = "alert alert-success";
 
   const textnode = document.createTextNode("Successed!");
+  node.appendChild(textnode); // Append the text to <li>
+  document.getElementById("myList").appendChild(node);
+
+  // await removeElement("myList");
+}
+
+function showErr() {
+  const node = document.createElement("div");
+  node.classList = "alert alert-danger";
+
+  const textnode = document.createTextNode("Error!");
   node.appendChild(textnode); // Append the text to <li>
   document.getElementById("myList").appendChild(node);
 
@@ -36,8 +47,18 @@ btn.addEventListener("click", async (e) => {
         "Content-Type": "application/json",
       },
     });
-    let data = await response.json();
-    console.log(data);
+
+    if (!response.ok) {
+      removeLoading("loading");
+
+      throw new Error(showErr());
+    } else {
+      let data = await response.json();
+      console.log(data);
+      removeLoading("loading");
+
+      showcomlete();
+    }
   } catch (err) {
     console.log(err);
   }

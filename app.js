@@ -9,11 +9,13 @@ const { connect } = require("./router/database");
 app.use(express.static("client"));
 
 const getRoute = require("./router/get");
+const { router } = require("./router/oauth");
 const PORT = process.env.PORT;
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use("/", getRoute);
+app.use("/", router);
 
 // app.use("/api/forge", oauthRouter);
 
