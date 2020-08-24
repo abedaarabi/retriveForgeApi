@@ -62,6 +62,7 @@ function insertData({ project, objects, objectElements, users }) {
     objectElements.map((element) => {
       con.query("INSERT INTO elements SET ?", element, function (err, result) {
         // console.log("1 record inserted in element");
+        console.log(result);
       });
     });
     users.map((user) => {

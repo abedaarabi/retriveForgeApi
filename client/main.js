@@ -19,7 +19,9 @@ function showcomlete() {
   const node = document.createElement("div");
   node.classList = "alert alert-success";
 
-  const textnode = document.createTextNode("Successed!");
+  const textnode = document.createTextNode(
+    "Successed! \n Data Inserted in to MOE Database."
+  );
   node.appendChild(textnode); // Append the text to <li>
   document.getElementById("myList").appendChild(node);
 

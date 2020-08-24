@@ -40,9 +40,11 @@ router.get("/data", (req, res) => {
   res.send({ hello: "younes" });
 });
 
-function delay(ms) {
+async function delay(ms) {
   return new Promise((resolve) => {
-    setTimeout(resolve, ms);
+    setTimeout(() => {
+      resolve();
+    }, ms);
   });
 }
 
@@ -103,7 +105,7 @@ router.get("/hubs", async (_req, res) => {
   const folders = await Promise.all(
     projects.map((project) => {
       const projectId = project.id;
-      console.log(projectId);
+      console.log(`Project Id: ${projectId}`);
 
       //********************************** Top Folder
       const topFolder = `${hub}/${moeHub_id}/projects/${projectId}/topFolders`;
@@ -163,8 +165,8 @@ router.get("/hubs", async (_req, res) => {
   let allStatus;
 
   while (!allStatus) {
-    console.log("waiting for it to start");
-    await delay(1000);
+    console.log("waiting for Translation to start");
+    await delay(10000);
     const translatesStatus = await Promise.all(
       originalItemUrns.map(([projectId, originalItemUrn]) => {
         // console.log("testfgsdjhgdas", projectId, originalItemUrn);
@@ -192,8 +194,8 @@ router.get("/hubs", async (_req, res) => {
   let allItemStatus;
 
   while (!allItemStatus) {
-    console.log("waiting for to complete");
-    await delay(1000);
+    console.log("waiting for Translation to complete");
+    await delay(10000);
     const translatesStatus = await Promise.all(
       originalItemUrns.map(([projectId, originalItemUrn]) => {
         // console.log("testfgsdjhgdas", projectId, originalItemUrn);
@@ -292,10 +294,13 @@ router.get("/hubs", async (_req, res) => {
 
   //const walls = wallOpject.properties.collection;
   const objectElements = [];
-
+  const log = "::::::::::::::::: Initializing Data ::::::::::::::::::::";
+  console.log(log);
   let allNonEmpty;
   try {
     while (true) {
+      await delay(10 * 1000);
+      console.log("::::::::::::::::: Wating for Data ::::::::::::::::::::");
       const metaDataApi = new MetaData();
       const guids = await metaDataApi.fetchMetadata(foldersContent);
       const properties = await metaDataApi.fetchProperties(guids);
@@ -309,8 +314,6 @@ router.get("/hubs", async (_req, res) => {
       if (allNonEmpty) {
         break;
       }
-
-      await delay(20000);
     }
     properties
       .filter(
@@ -335,6 +338,7 @@ router.get("/hubs", async (_req, res) => {
           // console.log(item);
           const typesName = elementsType(item, "Identity Data", "Type Name");
           // const abed = name(item, "Construction", "Function");
+          console.log(`Element: ${item.name} Type: ${typesName}`);
 
           const itemElement = {
             name: item.name,

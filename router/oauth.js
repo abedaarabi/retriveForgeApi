@@ -16,15 +16,15 @@ function getStoredToken() {
   return JSON.parse(result.toString());
 }
 
-// setInterval(() => {
-//   try {
-//     const data = getStoredToken();
+setInterval(() => {
+  try {
+    const data = getStoredToken();
 
-//     console.log(data.refresh_token);
-//   } catch (e) {
-//     console.log(e, "no token yet");
-//   }
-// }, 10 * 1000);
+    // console.log(data.refresh_token);
+  } catch (e) {
+    console.log(e, "no token yet");
+  }
+}, 10 * 1000);
 
 router.get("/token/oauth/callback", async (req, res) => {
   console.log(req.query.code);
@@ -51,7 +51,7 @@ async function authorize(code) {
       client_secret: `${client_secret}`,
       grant_type: "authorization_code",
       code: code,
-      redirect_uri: "http://6a0e677c58ab.ngrok.io/token/oauth/callback",
+      redirect_uri: "http://2008f5c7561b.ngrok.io/token/oauth/callback",
     }),
   });
 }
@@ -71,5 +71,5 @@ async function refreshToken(token) {
     }),
   });
 }
-authorize();
+
 module.exports = { router, getStoredToken };
