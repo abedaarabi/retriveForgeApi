@@ -14,6 +14,8 @@ const con = mysql.createConnection({
   multipleStatements: true,
 });
 const connect = function (callback) {
+  callback()
+  return
   con.connect(function (err) {
     if (err) throw err;
     console.log("Connected MySQL Database!");

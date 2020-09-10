@@ -12,6 +12,8 @@ const {
 const { reset } = require("nodemon");
 const { log } = require("console");
 const { getStoredToken } = require("./oauth");
+const { loadavg } = require("os");
+const { emitWarning } = require("process");
 
 const myToken = getStoredToken();
 
@@ -115,7 +117,6 @@ router.get("/hubs", async (_req, res) => {
             Authorization: `Bearer ${TOKEN}`,
           },
         })
-
         .catch(() => [projectId, []]); //if there are error returen empty
       return top.then((e) => [
         projectId,
@@ -126,6 +127,8 @@ router.get("/hubs", async (_req, res) => {
     })
   );
 
+  console.log(folders)
+
   //******************************* Folder Contents
   const api = new FolderApi();
   const result = await api.fetchFolderContents(folders);
@@ -135,7 +138,7 @@ router.get("/hubs", async (_req, res) => {
       return api
         .fetchContent(projectId, folder.id)
         .then(
-          (content) => content.included && [projectId, content.included[0]]
+          (content) => content.included && [projectId, content.included]
         );
     });
 
@@ -144,82 +147,98 @@ router.get("/hubs", async (_req, res) => {
 
   const foldersContent = (await Promise.all(foldersContentPromises)).filter(
     (item) => item
-  );
+  )
 
-  const originalItemUrns = foldersContent
-    .map(([projectId, itemUrn]) => {
-      console.log(itemUrn.attributes.extension.data.originalItemUrn);
 
-      return [projectId, itemUrn.attributes.extension.data.originalItemUrn];
-    })
-    .filter(([, itemUrns]) => itemUrns); // returen only True
+
+
+const derevitveUrns= [] 
+foldersContent.forEach(([projectId, urns]) =>{
+   
+  urns.forEach((urn)=>{
+    if (urn.relationships && urn.relationships.derivatives) {
+      const derivative= urn.relationships.derivatives.data.id
+      derevitveUrns.push([projectId,derivative, urn])
+    }
+    
+  })
+})
+
+
+  // const originalItemUrns = foldersContent
+  //   .map(([projectId, itemUrn]) => {
+  //     console.log(itemUrn.attributes.extension.data.originalItemUrn);
+
+  //     return [projectId, itemUrn.attributes.extension.data.originalItemUrn];
+  //   })
+  //   .filter(([, itemUrns]) => itemUrns); // returen only True
 
   console.log("start");
-  await Promise.all(
-    originalItemUrns.map(([projectId, originalItemUrn]) =>
-      publishModel(projectId, originalItemUrn)
-    )
-  );
+  // await Promise.all(
+  //   originalItemUrns.map(([projectId, originalItemUrn]) =>
+  //     publishModel(projectId, originalItemUrn)
+  //   )
+  // );
 
   // // make sure all projects been translated
-  let allStatus;
+  // let allStatus;
 
-  while (!allStatus) {
-    console.log("waiting for Translation to start");
-    await delay(10000);
-    const translatesStatus = await Promise.all(
-      originalItemUrns.map(([projectId, originalItemUrn]) => {
-        // console.log("testfgsdjhgdas", projectId, originalItemUrn);
-        return getPublishModelJob(projectId, originalItemUrn)
-          .then((response) => response.data.data)
-          .catch((err) => {
-            console.log(err);
-            return [];
-          });
-      })
-    );
+  // while (!allStatus) {
+  //   console.log("waiting for Translation to start");
+  //   await delay(10000);
+  //   const translatesStatus = await Promise.all(
+  //     originalItemUrns.map(([projectId, originalItemUrn]) => {
+  //       // console.log("testfgsdjhgdas", projectId, originalItemUrn);
+  //       return getPublishModelJob(projectId, originalItemUrn)
+  //         .then((response) => response.data.data)
+  //         .catch((err) => {
+  //           console.log(err);
+  //           return [];
+  //         });
+  //     })
+  //   );
 
-    // translateStatus.push({ attributes: { status: "notyet" } });
+  //   // translateStatus.push({ attributes: { status: "notyet" } });
 
-    allStatus = translatesStatus.every((data) => {
-      console.log(data);
-      if (!data || !data.attributes) return false;
-      // else if (data == null) console.log("Model Needs Publishing ");
-      return data.attributes.status === "complete";
-    });
-    console.log(allStatus);
-  }
+  //   allStatus = translatesStatus.every((data) => {
+  //     console.log(data);
+  //     if (!data || !data.attributes) return false;
+  //     // else if (data == null) console.log("Model Needs Publishing ");
+  //     return data.attributes.status === "complete";
+  //   });
+  //   console.log(allStatus);
+  // }
 
-  // ****************** make sure all projects been translated
-  let allItemStatus;
+  // // ****************** make sure all projects been translated
+  // let allItemStatus;
 
-  while (!allItemStatus) {
-    console.log("waiting for Translation to complete");
-    await delay(10000);
-    const translatesStatus = await Promise.all(
-      originalItemUrns.map(([projectId, originalItemUrn]) => {
-        // console.log("testfgsdjhgdas", projectId, originalItemUrn);
-        return translationStatus(projectId, originalItemUrn)
-          .then(
-            (response) =>
-              response.data.included[0].attributes.extension.data.processState
-          )
+  // while (!allItemStatus) {
+  //   console.log("waiting for Translation to complete");
+  //   await delay(10000);
+  //   const translatesStatus = await Promise.all(
+  //     originalItemUrns.map(([projectId, originalItemUrn]) => {
+  //       // console.log("testfgsdjhgdas", projectId, originalItemUrn);
+  //       return translationStatus(projectId, originalItemUrn)
+  //         .then(
+  //           (response) =>
+  //             response.data.included[0].attributes.extension.data.processState
+  //         )
 
-          .catch((err) => {
-            console.log(err);
-            return [];
-          });
-      })
-    );
+  //         .catch((err) => {
+  //           console.log(err);
+  //           return [];
+  //         });
+  //     })
+  //   );
 
-    // translateStatus.push({ attributes: { status: "notyet" } });
+  //   // translateStatus.push({ attributes: { status: "notyet" } });
 
-    allItemStatus = translatesStatus.every((data) => {
-      return data === "PROCESSING_COMPLETE";
-    });
+  //   allItemStatus = translatesStatus.every((data) => {
+  //     return data === "PROCESSING_COMPLETE";
+  //   });
 
-    console.log(allItemStatus);
-  }
+  //   console.log(allItemStatus);
+  // }
   // res.send(allStatus);
   // return;
   //***************************** User Information
@@ -238,9 +257,12 @@ router.get("/hubs", async (_req, res) => {
   // **************************** Classes
 
   const metaDataApi = new MetaData();
-  const guids = await metaDataApi.fetchMetadata(foldersContent);
-  const properties = await metaDataApi.fetchProperties(guids);
-
+  const guids = await metaDataApi.fetchMetadata(derevitveUrns);
+  // console.log(guids)
+guids.forEach((guid,index)=>console.log(guid[2].name, index))
+  const properties = await metaDataApi.fetchProperties([guids[6], guids[5]]);
+  res.send(properties)
+  console.log(properties)
   const regex = /\w+\K[0-9]{2,3}_F[0-9]{1,3}.*?\.rvt/gi;
 
   // function objectName(b) {
@@ -249,11 +271,11 @@ router.get("/hubs", async (_req, res) => {
   function objectName(b) {
     return properties.filter((property) => property.attributes.name == b);
   }
-
   // const foo = objectName(regex);
   // console.log(foo);
 
-  const structureElement = objectName("LLYN_B357_K09_F2_N01.rvt")[0];
+  const structureElement = objectName("UN17_K08_F2_Ventilation.rvt");
+
   // const mepElement = objectName(regex);
   // const elElement = objectName(regex);
   // const archElement = objectName(regex);
@@ -266,14 +288,16 @@ router.get("/hubs", async (_req, res) => {
 
     projectId: project.id,
   }));
-  console.log(formattedProjects);
+  console.log(formattedProjects, );
 
-  const objects = [
-    {
-      projectId: structureElement.attributes.projectId,
-      id: structureElement.attributes.id,
-      name: structureElement.attributes.displayName,
-    },
+
+
+  const objects = structureElement.map(element =>
+   ( {
+      projectId: element.attributes.projectId,
+      id: element.attributes.id,
+      // name: element.attributes.displayName,
+    })
     // {
     //   projectId: archElement.attributes.projectId,
     //   id: elElement.attributes.id,
@@ -290,71 +314,107 @@ router.get("/hubs", async (_req, res) => {
     //   id: archElement.attributes.id,
     //   name: archElement.attributes.displayName,
     // },
-  ];
+  )
+
+  console.log(objects)
+  let objectElements =[]
+  structureElement.forEach((property) => {
+    // console.log("hereeeeeeeeeeeeeeeeeeee", property.attributes.name);
+    // console.log(property.attributes);
+    //["Identity Data"]["Type Name"];
+
+    property.properties.collection.forEach((item) => {
+      //****************bug (collection)
+
+      const elementsId = item.externalId;
+
+      function elementsType(_x, y, z) {
+        let boo = item.properties;
+        if (boo && boo[y]) {
+          return boo[y][z];
+        }
+      }
+      // console.log(item);
+      const typesName = elementsType(item, "Identity Data", "Type Name");
+      // const abed = name(item, "Construction", "Function");
+      // console.log(`Element: ${item.name} Type: ${typesName}`);
+
+      const itemElement = {
+        name: item.name,
+        TypeName: typesName,
+        objectId: property.attributes.id,
+        time: timeDate,
+        externalId: item.externalId,
+      };
+      objectElements.push(itemElement);
+    });
+  });
+
+  return;
 
   //const walls = wallOpject.properties.collection;
-  const objectElements = [];
-  const log = "::::::::::::::::: Initializing Data ::::::::::::::::::::";
-  console.log(log);
-  let allNonEmpty;
-  try {
-    while (true) {
-      await delay(10 * 1000);
-      console.log("::::::::::::::::: Wating for Data ::::::::::::::::::::");
-      const metaDataApi = new MetaData();
-      const guids = await metaDataApi.fetchMetadata(foldersContent);
-      const properties = await metaDataApi.fetchProperties(guids);
+  // const objectElements = [];
+  // const log = "::::::::::::::::: Initializing Data ::::::::::::::::::::";
+  // console.log(log);
+  // let allNonEmpty;
+  // try {
+  //   while (true) {
+  //     await delay(10 * 1000);
+  //     console.log("::::::::::::::::: Wating for Data ::::::::::::::::::::");
+  //     const metaDataApi = new MetaData();
+  //     const guids = await metaDataApi.fetchMetadata(foldersContent);
+  //     const properties = await metaDataApi.fetchProperties(guids);
 
-      allNonEmpty = properties
-        .filter(
-          (property) => property.attributes.name == "LLYN_B357_K09_F2_N01.rvt"
-        )
-        .every((property) => property.properties !== undefined);
-      console.log(">>>>>>>>>>>>>>>>>>>>> ", allNonEmpty);
-      if (allNonEmpty) {
-        break;
-      }
-    }
-    properties
-      .filter(
-        (property) => property.attributes.name == "LLYN_B357_K09_F2_N01.rvt"
-      )
-      .forEach((property) => {
-        // console.log("hereeeeeeeeeeeeeeeeeeee", property.attributes.name);
-        // console.log(property.attributes);
-        //["Identity Data"]["Type Name"];
+  //     allNonEmpty = properties
+  //       .filter(
+  //         (property) => property.attributes.name == "LLYN_B357_K09_F2_N01.rvt"
+  //       )
+  //       .every((property) => property.properties !== undefined);
+  //     console.log(">>>>>>>>>>>>>>>>>>>>> ", allNonEmpty);
+  //     if (allNonEmpty) {
+  //       break;
+  //     }
+  //   }
+  //   properties
+  //     .filter(
+  //       (property) => property.attributes.name == "LLYN_B357_K09_F2_N01.rvt"
+  //     )
+  //     .forEach((property) => {
+  //       // console.log("hereeeeeeeeeeeeeeeeeeee", property.attributes.name);
+  //       // console.log(property.attributes);
+  //       //["Identity Data"]["Type Name"];
 
-        property.properties.collection.forEach((item) => {
-          //****************bug (collection)
+  //       property.properties.collection.forEach((item) => {
+  //         //****************bug (collection)
 
-          const elementsId = item.externalId;
+  //         const elementsId = item.externalId;
 
-          function elementsType(_x, y, z) {
-            let boo = item.properties;
-            if (boo && boo[y]) {
-              return boo[y][z];
-            }
-          }
-          // console.log(item);
-          const typesName = elementsType(item, "Identity Data", "Type Name");
-          // const abed = name(item, "Construction", "Function");
-          console.log(`Element: ${item.name} Type: ${typesName}`);
+  //         function elementsType(_x, y, z) {
+  //           let boo = item.properties;
+  //           if (boo && boo[y]) {
+  //             return boo[y][z];
+  //           }
+  //         }
+  //         // console.log(item);
+  //         const typesName = elementsType(item, "Identity Data", "Type Name");
+  //         // const abed = name(item, "Construction", "Function");
+  //         console.log(`Element: ${item.name} Type: ${typesName}`);
 
-          const itemElement = {
-            name: item.name,
-            TypeName: typesName,
-            objectId: property.attributes.id,
-            time: timeDate,
-            externalId: item.externalId,
-          };
-          objectElements.push(itemElement);
-        });
-      });
+  //         const itemElement = {
+  //           name: item.name,
+  //           TypeName: typesName,
+  //           objectId: property.attributes.id,
+  //           time: timeDate,
+  //           externalId: item.externalId,
+  //         };
+  //         objectElements.push(itemElement);
+  //       });
+  //     });
 
-    console.log(":::Data Inserted::::");
-  } catch (error) {
-    console.log(error);
-  }
+  //   console.log(":::Data Inserted::::");
+  // } catch (error) {
+  //   console.log(error);
+  // }
   res.send(objectElements);
 
   insertData({
@@ -396,7 +456,10 @@ class FolderApi {
     const promises = folders.map((project) => {
       // const id = project[0];
       // const urn = project[1].id;
+      console.log(project);
+      
       const [id, { id: urn }] = project;
+
       return this.fetchContent(id, urn).then((content) => [id, content.data]);
       //calling
     });
@@ -425,34 +488,42 @@ class FolderApi {
 class MetaData {
   async fetchMetadata(foldersContent) {
     const guids = await Promise.all(
-      foldersContent.map(([projectId, folderContent]) => {
-        const id = folderContent.relationships.derivatives.data.id;
+      foldersContent.map(([projectId, id, folderContent]) => {
+       
+        // const id = folderContent.relationships.derivatives.data.id;
         const url = `https://developer.api.autodesk.com/modelderivative/v2/designdata/${id}/metadata`;
         // console.log(url);
-        const contents = axios
+        const contentsPromise = axios
           .get(url, {
             headers: {
               Authorization: `Bearer ${TOKEN}`,
             },
           })
           .catch((e) => e);
-        return contents.then((response) => {
+        return contentsPromise.then((response) => {
           let metadaEntry;
-
+         
+          if (!response.data){
+            return
+          }
           metadaEntry = response.data.data.metadata.find(
             (metadata) => metadata.role === "3d"
           );
 
+          if (!(metadaEntry && metadaEntry.guid)) {
+            return
+          }
+
           return [
             id,
             metadaEntry && metadaEntry.guid,
-            { ...folderContent.attributes, id: folderContent.id, projectId },
+            { ...folderContent, ...folderContent.attributes, projectId },
           ];
         });
       })
     );
 
-    return guids.filter((guid) => guid[1]);
+    return guids.filter((guid) => guid);
   }
 
   async fetchProperties(guids) {
@@ -467,15 +538,21 @@ class MetaData {
             },
           })
           .catch((e) => e);
-        return contents.then((response) => ({
-          attributes,
-          properties: response.data.data,
-        }));
+        return contents.then((response) => {
+      
+        if (!response.data) {
+          return
+        }
+          return {
+            attributes,
+            properties: response.data.data,
+          }
+        });
         // .then((data) => console.log(data));
       })
     );
 
-    return data;
+    return data.filter(data => data);
   }
 }
 
