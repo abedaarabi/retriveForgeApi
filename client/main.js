@@ -1,4 +1,4 @@
-const btn = document.querySelector("#btn");
+const btn = document.getElementById("btn");
 
 document.getElementById("loan-form").addEventListener("click", function (e) {
   if (e.target.classList.contains("btn-success")) {

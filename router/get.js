@@ -36,12 +36,6 @@ router.get("/", (_req, res) => {
   res.sendFile(indexFilePath);
 });
 
-router.get("/data", (req, res) => {
-  //fetch data from database
-
-  res.send({ hello: "younes" });
-});
-
 async function delay(ms) {
   return new Promise((resolve) => {
     setTimeout(() => {
@@ -49,38 +43,6 @@ async function delay(ms) {
     }, ms);
   });
 }
-
-// publishModel(
-//   "b.d4272d0d-557d-4a6d-b45e-9db2ea0c4cc4",
-//   "urn:adsk.wipprod:dm.lineage:pugXMoPgTEGT4MUKIbdtWA"
-// ).then((c) => console.log(c.data));
-
-// getPublishModelJob(
-//   "b.d4272d0d-557d-4a6d-b45e-9db2ea0c4cc4",
-//   "urn:adsk.wipprod:dm.lineage:pugXMoPgTEGT4MUKIbdtWA"
-// ).then((d) => {
-//   console.log(d.data);
-// });
-
-// Promise.all(
-//   [
-//     "urn:adsk.wipprod:dm.lineage:pugXMoPgTEGT4MUKIbdtWA",
-//     "urn:adsk.wipprod:dm.lineage:wlQJlV7dTveU08gaYyOQ7w",
-//     "urn:adsk.wipprod:dm.lineage:QXtjlQAeSHe90gWWBYtM2g",
-//     "urn:adsk.wipprod:dm.lineage:JzpplYIhR3yLQ3PxNLjsqg",
-//   ].map((originalItemUrn) => {
-//     return getPublishModelJob(
-//       "b.d4272d0d-557d-4a6d-b45e-9db2ea0c4cc4",
-//       originalItemUrn
-//     ).then(
-//       () => console.log("done"),
-//       (err) => {
-//         console.log("ttttttttttttttttttttttt", err);
-//         return [];
-//       }
-//     );
-//   })
-// );
 
 router.get("/hubs", async (_req, res) => {
   const myToken = getStoredToken();
@@ -102,15 +64,16 @@ router.get("/hubs", async (_req, res) => {
 
   const projects = hub_Projects.data.data;
 
-  //ONLY for 1 project otherwaies you most loop
-
   const folders = await Promise.all(
     projects.map((project) => {
       const projectId = project.id;
       console.log(`Project Id: ${projectId}`);
 
       //********************************** Top Folder
+
       const topFolder = `${hub}/${moeHub_id}/projects/${projectId}/topFolders`;
+      console.log(topFolder);
+
       const top = axios
         .get(topFolder, {
           headers: {
@@ -118,16 +81,16 @@ router.get("/hubs", async (_req, res) => {
           },
         })
         .catch(() => [projectId, []]); //if there are error returen empty
+
       return top.then((e) => [
         projectId,
+
         e.data.data.find(
           (folder) => folder.attributes.name === "Project Files"
         ),
       ]);
     })
   );
-
-  console.log(folders)
 
   //******************************* Folder Contents
   const api = new FolderApi();
@@ -137,9 +100,7 @@ router.get("/hubs", async (_req, res) => {
     const tmp = folders.map((folder) => {
       return api
         .fetchContent(projectId, folder.id)
-        .then(
-          (content) => content.included && [projectId, content.included]
-        );
+        .then((content) => content.included && [projectId, content.included]);
     });
 
     foldersContentPromises.push(...tmp);
@@ -147,33 +108,21 @@ router.get("/hubs", async (_req, res) => {
 
   const foldersContent = (await Promise.all(foldersContentPromises)).filter(
     (item) => item
-  )
+  );
 
-
-
-
-const derevitveUrns= [] 
-foldersContent.forEach(([projectId, urns]) =>{
-   
-  urns.forEach((urn)=>{
-    if (urn.relationships && urn.relationships.derivatives) {
-      const derivative= urn.relationships.derivatives.data.id
-      derevitveUrns.push([projectId,derivative, urn])
-    }
-    
-  })
-})
-
-
-  // const originalItemUrns = foldersContent
-  //   .map(([projectId, itemUrn]) => {
-  //     console.log(itemUrn.attributes.extension.data.originalItemUrn);
-
-  //     return [projectId, itemUrn.attributes.extension.data.originalItemUrn];
-  //   })
-  //   .filter(([, itemUrns]) => itemUrns); // returen only True
+  const derevitveUrns = [];
+  foldersContent.forEach(([projectId, urns]) => {
+    urns.forEach((urn) => {
+      if (urn.relationships && urn.relationships.derivatives) {
+        const derivative = urn.relationships.derivatives.data.id;
+        derevitveUrns.push([projectId, derivative, urn]);
+      }
+    });
+  });
 
   console.log("start");
+
+  //**********************TRANSLATION*************************** */
   // await Promise.all(
   //   originalItemUrns.map(([projectId, originalItemUrn]) =>
   //     publishModel(projectId, originalItemUrn)
@@ -254,15 +203,16 @@ foldersContent.forEach(([projectId, urns]) =>{
   usersNested.forEach((nestedUser) => {
     users.push(...nestedUser);
   });
+
   // **************************** Classes
 
   const metaDataApi = new MetaData();
   const guids = await metaDataApi.fetchMetadata(derevitveUrns);
   // console.log(guids)
-guids.forEach((guid,index)=>console.log(guid[2].name, index))
-  const properties = await metaDataApi.fetchProperties([guids[6], guids[5]]);
-  res.send(properties)
-  console.log(properties)
+  guids.forEach((guid, index) => console.log(guid[2].name, index));
+
+  const properties = await metaDataApi.fetchProperties([guids[5]]);
+  res.send(properties);
   const regex = /\w+\K[0-9]{2,3}_F[0-9]{1,3}.*?\.rvt/gi;
 
   // function objectName(b) {
@@ -274,12 +224,11 @@ guids.forEach((guid,index)=>console.log(guid[2].name, index))
   // const foo = objectName(regex);
   // console.log(foo);
 
-  const structureElement = objectName("UN17_K08_F2_Ventilation.rvt");
+  const structureElement = objectName("UN17_K08_F2_VVS.rvt");
 
   // const mepElement = objectName(regex);
   // const elElement = objectName(regex);
   // const archElement = objectName(regex);
-  console.log(structureElement);
 
   let timeDate = new Date();
 
@@ -288,44 +237,16 @@ guids.forEach((guid,index)=>console.log(guid[2].name, index))
 
     projectId: project.id,
   }));
-  console.log(formattedProjects, );
 
+  const objects = structureElement.map((element) => ({
+    projectId: element.attributes.projectId,
+    id: element.attributes.id,
+    name: element.attributes.displayName,
+  }));
 
-
-  const objects = structureElement.map(element =>
-   ( {
-      projectId: element.attributes.projectId,
-      id: element.attributes.id,
-      // name: element.attributes.displayName,
-    })
-    // {
-    //   projectId: archElement.attributes.projectId,
-    //   id: elElement.attributes.id,
-    //   name: elElement.attributes.displayName,
-    // },
-    // {
-    //   projectId: archElement.attributes.projectId,
-    //   id: mepElement.attributes.id,
-    //   name: mepElement.attributes.displayName,
-    // },
-
-    // {
-    //   projectId: archElement.attributes.projectId,
-    //   id: archElement.attributes.id,
-    //   name: archElement.attributes.displayName,
-    // },
-  )
-
-  console.log(objects)
-  let objectElements =[]
+  let objectElements = [];
   structureElement.forEach((property) => {
-    // console.log("hereeeeeeeeeeeeeeeeeeee", property.attributes.name);
-    // console.log(property.attributes);
-    //["Identity Data"]["Type Name"];
-
     property.properties.collection.forEach((item) => {
-      //****************bug (collection)
-
       const elementsId = item.externalId;
 
       function elementsType(_x, y, z) {
@@ -334,9 +255,9 @@ guids.forEach((guid,index)=>console.log(guid[2].name, index))
           return boo[y][z];
         }
       }
-      // console.log(item);
+
       const typesName = elementsType(item, "Identity Data", "Type Name");
-      // const abed = name(item, "Construction", "Function");
+
       // console.log(`Element: ${item.name} Type: ${typesName}`);
 
       const itemElement = {
@@ -350,85 +271,18 @@ guids.forEach((guid,index)=>console.log(guid[2].name, index))
     });
   });
 
-  return;
-
-  //const walls = wallOpject.properties.collection;
-  // const objectElements = [];
-  // const log = "::::::::::::::::: Initializing Data ::::::::::::::::::::";
-  // console.log(log);
-  // let allNonEmpty;
-  // try {
-  //   while (true) {
-  //     await delay(10 * 1000);
-  //     console.log("::::::::::::::::: Wating for Data ::::::::::::::::::::");
-  //     const metaDataApi = new MetaData();
-  //     const guids = await metaDataApi.fetchMetadata(foldersContent);
-  //     const properties = await metaDataApi.fetchProperties(guids);
-
-  //     allNonEmpty = properties
-  //       .filter(
-  //         (property) => property.attributes.name == "LLYN_B357_K09_F2_N01.rvt"
-  //       )
-  //       .every((property) => property.properties !== undefined);
-  //     console.log(">>>>>>>>>>>>>>>>>>>>> ", allNonEmpty);
-  //     if (allNonEmpty) {
-  //       break;
-  //     }
-  //   }
-  //   properties
-  //     .filter(
-  //       (property) => property.attributes.name == "LLYN_B357_K09_F2_N01.rvt"
-  //     )
-  //     .forEach((property) => {
-  //       // console.log("hereeeeeeeeeeeeeeeeeeee", property.attributes.name);
-  //       // console.log(property.attributes);
-  //       //["Identity Data"]["Type Name"];
-
-  //       property.properties.collection.forEach((item) => {
-  //         //****************bug (collection)
-
-  //         const elementsId = item.externalId;
-
-  //         function elementsType(_x, y, z) {
-  //           let boo = item.properties;
-  //           if (boo && boo[y]) {
-  //             return boo[y][z];
-  //           }
-  //         }
-  //         // console.log(item);
-  //         const typesName = elementsType(item, "Identity Data", "Type Name");
-  //         // const abed = name(item, "Construction", "Function");
-  //         console.log(`Element: ${item.name} Type: ${typesName}`);
-
-  //         const itemElement = {
-  //           name: item.name,
-  //           TypeName: typesName,
-  //           objectId: property.attributes.id,
-  //           time: timeDate,
-  //           externalId: item.externalId,
-  //         };
-  //         objectElements.push(itemElement);
-  //       });
-  //     });
-
-  //   console.log(":::Data Inserted::::");
-  // } catch (error) {
-  //   console.log(error);
-  // }
-  res.send(objectElements);
-
   insertData({
     projects: formattedProjects,
     objects,
     objectElements,
-    users,
+    users: users[1],
   });
   // function to instert the data to MySQL
 });
 
 class User {
   async userInfo(projectId) {
-    const url = `https://developer.api.autodesk.com/bim360/admin/v1/projects/${projectId}/users`,
+    const url = `https://developer.api.autodesk.com/bim360/admin/v1/projects/${projectId}/users?limit=200`,
       contents = await axios({
         url,
         method: "get",
@@ -457,7 +311,7 @@ class FolderApi {
       // const id = project[0];
       // const urn = project[1].id;
       console.log(project);
-      
+
       const [id, { id: urn }] = project;
 
       return this.fetchContent(id, urn).then((content) => [id, content.data]);
@@ -489,7 +343,6 @@ class MetaData {
   async fetchMetadata(foldersContent) {
     const guids = await Promise.all(
       foldersContent.map(([projectId, id, folderContent]) => {
-       
         // const id = folderContent.relationships.derivatives.data.id;
         const url = `https://developer.api.autodesk.com/modelderivative/v2/designdata/${id}/metadata`;
         // console.log(url);
@@ -502,16 +355,16 @@ class MetaData {
           .catch((e) => e);
         return contentsPromise.then((response) => {
           let metadaEntry;
-         
-          if (!response.data){
-            return
+
+          if (!response.data) {
+            return;
           }
           metadaEntry = response.data.data.metadata.find(
             (metadata) => metadata.role === "3d"
           );
 
           if (!(metadaEntry && metadaEntry.guid)) {
-            return
+            return;
           }
 
           return [
@@ -539,20 +392,19 @@ class MetaData {
           })
           .catch((e) => e);
         return contents.then((response) => {
-      
-        if (!response.data) {
-          return
-        }
+          if (!response.data) {
+            return;
+          }
           return {
             attributes,
             properties: response.data.data,
-          }
+          };
         });
         // .then((data) => console.log(data));
       })
     );
 
-    return data.filter(data => data);
+    return data.filter((data) => data);
   }
 }
 

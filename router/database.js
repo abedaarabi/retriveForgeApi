@@ -14,8 +14,8 @@ const con = mysql.createConnection({
   multipleStatements: true,
 });
 const connect = function (callback) {
-  callback()
-  return
+  // callback();
+
   con.connect(function (err) {
     if (err) throw err;
     console.log("Connected MySQL Database!");
@@ -33,7 +33,7 @@ const connect = function (callback) {
   });
 };
 //https://github.com/mysqljs/mysql
-function insertData({ project, objects, objectElements, users }) {
+function insertData({ projects, objects, objectElements, users }) {
   // console.log(project, objects);
 
   // con.query(
@@ -48,32 +48,35 @@ function insertData({ project, objects, objectElements, users }) {
   function insert() {
     const err = "externalId are exist";
 
-    con.query("INSERT INTO BIM_360_Project SET ?", project, function (
-      err,
-      result
-    ) {
-      console.log("1 record inserted in projects");
+    projects.map((project) => {
+      con.query("INSERT INTO BIM_360_Project SET ?", project, function (
+        err,
+        result
+      ) {
+        console.log(result);
+      });
     });
 
     objects.map((object) => {
       con.query("INSERT INTO objects SET ?", object, function (err, result) {
-        console.log("record inserted in objects");
+        console.log(result);
       });
     });
 
     objectElements.map((element) => {
       con.query("INSERT INTO elements SET ?", element, function (err, result) {
         // console.log("1 record inserted in element");
-        console.log(result);
+        // console.log(err);
       });
     });
+
     users.map((user) => {
       con.query("INSERT INTO project_users SET ?", user, function (
         err,
         result
       ) {
-        // console.log(err);
-        // console.log(result);
+        console.log(result);
+
         // console.log("1 record inserted in element");
       });
     });
