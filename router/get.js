@@ -72,7 +72,6 @@ router.get("/hubs", async (_req, res) => {
       //********************************** Top Folder
 
       const topFolder = `${hub}/${moeHub_id}/projects/${projectId}/topFolders`;
-      console.log(topFolder);
 
       const top = axios
         .get(topFolder, {
@@ -211,7 +210,7 @@ router.get("/hubs", async (_req, res) => {
   // console.log(guids)
   guids.forEach((guid, index) => console.log(guid[2].name, index));
 
-  const properties = await metaDataApi.fetchProperties([guids[5]]);
+  const properties = await metaDataApi.fetchProperties([guids[116]]);
   res.send(properties);
   const regex = /\w+\K[0-9]{2,3}_F[0-9]{1,3}.*?\.rvt/gi;
 
@@ -224,7 +223,7 @@ router.get("/hubs", async (_req, res) => {
   // const foo = objectName(regex);
   // console.log(foo);
 
-  const structureElement = objectName("UN17_K08_F2_VVS.rvt");
+  const structureElement = objectName("LLYN.B357_K09_F2_N01.rvt");
 
   // const mepElement = objectName(regex);
   // const elElement = objectName(regex);
@@ -275,7 +274,7 @@ router.get("/hubs", async (_req, res) => {
     projects: formattedProjects,
     objects,
     objectElements,
-    users: users[1],
+    users: users,
   });
   // function to instert the data to MySQL
 });
@@ -293,15 +292,12 @@ class User {
 
     const metaData = await contents.data.results;
 
-    return [
-      projectId,
-      metaData.map((user) => ({
-        userName: user.name,
-        userEmail: user.email,
-        userId: user.id,
-        projectId: projectId,
-      })),
-    ];
+    return metaData.map((user) => ({
+      userName: user.name,
+      userEmail: user.email,
+      userId: user.id,
+      projectId: projectId,
+    }));
   }
 }
 
