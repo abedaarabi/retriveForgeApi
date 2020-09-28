@@ -59,14 +59,14 @@ function insertData({ projects, objects, objectElements, users }) {
 
     objects.map((object) => {
       con.query("INSERT INTO objects SET ?", object, function (err, result) {
-        console.log(result);
+        // console.log(result);
       });
     });
 
     objectElements.map((element) => {
       con.query("INSERT INTO elements SET ?", element, function (err, result) {
         // console.log("1 record inserted in element");
-        // console.log(err);
+        // console.log(result);
       });
     });
 
@@ -75,8 +75,7 @@ function insertData({ projects, objects, objectElements, users }) {
         err,
         result
       ) {
-        console.log(result);
-
+        // console.log(result);
         // console.log("1 record inserted in element");
       });
     });

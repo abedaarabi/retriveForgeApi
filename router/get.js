@@ -26,9 +26,10 @@ const {
   issue_ID,
   forge_host,
   forge,
-
   refreshtoken,
   forge_download,
+  tokenBody,
+  auothUrl,
 } = process.env;
 
 router.get("/", (_req, res) => {
@@ -61,6 +62,18 @@ router.get("/hubs", async (_req, res) => {
       Authorization: `Bearer ${TOKEN}`,
     },
   });
+  //***************************************** */
+
+  const tokenResponse = await axios({
+    url: "https://developer.api.autodesk.com/authentication/v1/authenticate",
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    data: tokenBody,
+  }).catch((err) => err);
+
+  const accessToken = await tokenResponse.data.access_token;
 
   const projects = hub_Projects.data.data;
 
@@ -91,6 +104,30 @@ router.get("/hubs", async (_req, res) => {
     })
   );
 
+  //***************************************** */
+
+  const Projects_job_number = await Promise.all(
+    projects.map((project) => {
+      const projectId = project.id.substring(1 && 2);
+      console.log(projectId);
+
+      const account_ID = "c65ce02f-8304-4d1d-8684-e55abb2f54a0";
+      const response = axios
+        .get(
+          `https://developer.api.autodesk.com/hq/v1/accounts/${account_ID}/projects/${projectId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        )
+
+        .catch((err) => console.log(err));
+      return response.then((data) => data.data);
+    })
+  );
+
+  //***************************************************** */
   //******************************* Folder Contents
   const api = new FolderApi();
   const result = await api.fetchFolderContents(folders);
@@ -122,73 +159,7 @@ router.get("/hubs", async (_req, res) => {
   console.log("start");
 
   //**********************TRANSLATION*************************** */
-  // await Promise.all(
-  //   originalItemUrns.map(([projectId, originalItemUrn]) =>
-  //     publishModel(projectId, originalItemUrn)
-  //   )
-  // );
 
-  // // make sure all projects been translated
-  // let allStatus;
-
-  // while (!allStatus) {
-  //   console.log("waiting for Translation to start");
-  //   await delay(10000);
-  //   const translatesStatus = await Promise.all(
-  //     originalItemUrns.map(([projectId, originalItemUrn]) => {
-  //       // console.log("testfgsdjhgdas", projectId, originalItemUrn);
-  //       return getPublishModelJob(projectId, originalItemUrn)
-  //         .then((response) => response.data.data)
-  //         .catch((err) => {
-  //           console.log(err);
-  //           return [];
-  //         });
-  //     })
-  //   );
-
-  //   // translateStatus.push({ attributes: { status: "notyet" } });
-
-  //   allStatus = translatesStatus.every((data) => {
-  //     console.log(data);
-  //     if (!data || !data.attributes) return false;
-  //     // else if (data == null) console.log("Model Needs Publishing ");
-  //     return data.attributes.status === "complete";
-  //   });
-  //   console.log(allStatus);
-  // }
-
-  // // ****************** make sure all projects been translated
-  // let allItemStatus;
-
-  // while (!allItemStatus) {
-  //   console.log("waiting for Translation to complete");
-  //   await delay(10000);
-  //   const translatesStatus = await Promise.all(
-  //     originalItemUrns.map(([projectId, originalItemUrn]) => {
-  //       // console.log("testfgsdjhgdas", projectId, originalItemUrn);
-  //       return translationStatus(projectId, originalItemUrn)
-  //         .then(
-  //           (response) =>
-  //             response.data.included[0].attributes.extension.data.processState
-  //         )
-
-  //         .catch((err) => {
-  //           console.log(err);
-  //           return [];
-  //         });
-  //     })
-  //   );
-
-  //   // translateStatus.push({ attributes: { status: "notyet" } });
-
-  //   allItemStatus = translatesStatus.every((data) => {
-  //     return data === "PROCESSING_COMPLETE";
-  //   });
-
-  //   console.log(allItemStatus);
-  // }
-  // res.send(allStatus);
-  // return;
   //***************************** User Information
   const userMetaData = new User();
 
@@ -204,16 +175,19 @@ router.get("/hubs", async (_req, res) => {
   });
 
   // **************************** Classes
+  const regex = /\w+\K[0-9]{2,3}_F[0-9]{1,3}.*?\.rvt/gi;
 
   const metaDataApi = new MetaData();
   const guids = await metaDataApi.fetchMetadata(derevitveUrns);
-  // console.log(guids)
-  guids.forEach((guid, index) => console.log(guid[2].name, index));
 
-  const properties = await metaDataApi.fetchProperties([guids[116]]);
-  res.send(properties);
-  const regex = /\w+\K[0-9]{2,3}_F[0-9]{1,3}.*?\.rvt/gi;
+  guids.forEach((guid, index) => {
+    if (guid[2].name.match(/INOL_K08_L1_F2.rvt/gim)) {
+      console.log(guid[2].name, index);
+    }
+  });
 
+  const properties = await metaDataApi.fetchProperties([guids[85]]);
+  // res.send(properties);
   // function objectName(b) {
   //   return properties.find((property) => property.attributes.name === b);
   // }
@@ -223,7 +197,7 @@ router.get("/hubs", async (_req, res) => {
   // const foo = objectName(regex);
   // console.log(foo);
 
-  const structureElement = objectName("LLYN.B357_K09_F2_N01.rvt");
+  const structureElement = objectName("INOL_K08_L1_F2.rvt");
 
   // const mepElement = objectName(regex);
   // const elElement = objectName(regex);
@@ -237,6 +211,25 @@ router.get("/hubs", async (_req, res) => {
     projectId: project.id,
   }));
 
+  //********Push MOE ProjectID to the database********
+  const jobNumber = Projects_job_number;
+
+  const moeProjectId = jobNumber.map((item) => ({
+    id: "b." + item.id,
+    project_jab_number: item.job_number,
+  }));
+
+  const idMoeForge = formattedProjects.map((item) => {
+    const myID = item.projectId;
+    const secondArr = moeProjectId.find((item2) => {
+      return item2.id === myID;
+    });
+    item.project_jab_number = secondArr.project_jab_number;
+    return item;
+  });
+  console.log(idMoeForge);
+
+  //**************************************************** */
   const objects = structureElement.map((element) => ({
     projectId: element.attributes.projectId,
     id: element.attributes.id,
@@ -256,22 +249,37 @@ router.get("/hubs", async (_req, res) => {
       }
 
       const typesName = elementsType(item, "Identity Data", "Type Name");
+      const workSet = elementsType(item, "Identity Data", "Workset");
+      const typeSorting = elementsType(item, "Identity Data", "Type Sorting");
+      const CCSTypeID_Type = elementsType(item, "Other", "CCSTypeID_Type");
+      const CCSClassCode_Type = elementsType(
+        item,
+        "Other",
+        "CCSClassCode_Type"
+      );
+      const CCSTypeID = elementsType(item, "Other", "CCSTypeID");
 
       // console.log(`Element: ${item.name} Type: ${typesName}`);
 
       const itemElement = {
         name: item.name,
         TypeName: typesName,
+
         objectId: property.attributes.id,
         time: timeDate,
         externalId: item.externalId,
+        Workset: workSet,
+        Type_Sorting: typeSorting,
+        CCSTypeID: CCSTypeID,
+        CCSTypeID_Type: CCSTypeID_Type,
+        CCSClassCode_Type: CCSClassCode_Type,
       };
       objectElements.push(itemElement);
     });
   });
 
   insertData({
-    projects: formattedProjects,
+    projects: idMoeForge,
     objects,
     objectElements,
     users: users,
@@ -306,7 +314,6 @@ class FolderApi {
     const promises = folders.map((project) => {
       // const id = project[0];
       // const urn = project[1].id;
-      console.log(project);
 
       const [id, { id: urn }] = project;
 
@@ -339,16 +346,17 @@ class MetaData {
   async fetchMetadata(foldersContent) {
     const guids = await Promise.all(
       foldersContent.map(([projectId, id, folderContent]) => {
-        // const id = folderContent.relationships.derivatives.data.id;
         const url = `https://developer.api.autodesk.com/modelderivative/v2/designdata/${id}/metadata`;
-        // console.log(url);
+
         const contentsPromise = axios
           .get(url, {
             headers: {
               Authorization: `Bearer ${TOKEN}`,
             },
           })
+
           .catch((e) => e);
+
         return contentsPromise.then((response) => {
           let metadaEntry;
 
