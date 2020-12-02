@@ -51,7 +51,7 @@ async function authorize(code) {
       client_secret: `${client_secret}`,
       grant_type: "authorization_code",
       code: code,
-      redirect_uri: "http://0a481c6d3fed.ngrok.io/token/oauth/callback",
+      redirect_uri: "http://841adb345ae2.ngrok.io/token/oauth/callback",
     }),
   });
 }

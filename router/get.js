@@ -62,6 +62,7 @@ router.get("/hubs", async (_req, res) => {
       Authorization: `Bearer ${TOKEN}`,
     },
   });
+
   //***************************************** */
 
   const tokenResponse = await axios({
@@ -131,7 +132,10 @@ router.get("/hubs", async (_req, res) => {
   //******************************* Folder Contents
   const api = new FolderApi();
   const result = await api.fetchFolderContents(folders);
+  console.log(result);
+
   const foldersContentPromises = [];
+
   result.forEach(([projectId, folders]) => {
     const tmp = folders.map((folder) => {
       return api
@@ -161,33 +165,35 @@ router.get("/hubs", async (_req, res) => {
   //**********************TRANSLATION*************************** */
 
   //***************************** User Information
-  const userMetaData = new User();
+  // const userMetaData = new User();
 
-  const usersNested = await Promise.all(
-    projects.map((project) => {
-      return userMetaData.userInfo(project.id);
-    })
-  );
+  // const usersNested = await Promise.all(
+  //   projects.map((project) => {
+  //     return userMetaData.userInfo(project.id);
+  //   })
+  // ).then((d) => console.log(d));
 
-  const users = [];
-  usersNested.forEach((nestedUser) => {
-    users.push(...nestedUser);
-  });
+  // const users = [];
+  // usersNested.forEach((nestedUser) => {
+  //   users.push(...nestedUser);
+  // });
 
   // **************************** Classes
+
   const regex = /\w+\K[0-9]{2,3}_F[0-9]{1,3}.*?\.rvt/gi;
 
   const metaDataApi = new MetaData();
   const guids = await metaDataApi.fetchMetadata(derevitveUrns);
 
-  guids.forEach((guid, index) => {
+  const foo1 = guids.forEach((guid, index) => {
     if (guid[2].name.match(/INOL_K08_L1_F2.rvt/gim)) {
       console.log(guid[2].name, index);
     }
   });
+  console.log(foo1);
+  const properties = await metaDataApi.fetchProperties([guids[146]]);
 
-  const properties = await metaDataApi.fetchProperties([guids[85]]);
-  // res.send(properties);
+ 
   // function objectName(b) {
   //   return properties.find((property) => property.attributes.name === b);
   // }
@@ -227,7 +233,7 @@ router.get("/hubs", async (_req, res) => {
     item.project_jab_number = secondArr.project_jab_number;
     return item;
   });
-  console.log(idMoeForge);
+  // console.log(idMoeForge);
 
   //**************************************************** */
   const objects = structureElement.map((element) => ({
@@ -237,6 +243,7 @@ router.get("/hubs", async (_req, res) => {
   }));
 
   let objectElements = [];
+  let elementProperties = [];
   structureElement.forEach((property) => {
     property.properties.collection.forEach((item) => {
       const elementsId = item.externalId;
@@ -250,7 +257,8 @@ router.get("/hubs", async (_req, res) => {
 
       const typesName = elementsType(item, "Identity Data", "Type Name");
       const workSet = elementsType(item, "Identity Data", "Workset");
-      const typeSorting = elementsType(item, "Identity Data", "Type Sorting");
+      let typeSorting = elementsType(item, "Identity Data", "Type Sorting");
+
       const CCSTypeID_Type = elementsType(item, "Other", "CCSTypeID_Type");
       const CCSClassCode_Type = elementsType(
         item,
@@ -268,22 +276,35 @@ router.get("/hubs", async (_req, res) => {
         objectId: property.attributes.id,
         time: timeDate,
         externalId: item.externalId,
+        // Workset: workSet,
+        // Type_Sorting: typeSorting,
+        // CCSTypeID: CCSTypeID,
+        // CCSTypeID_Type: CCSTypeID_Type,
+        // CCSClassCode_Type: CCSClassCode_Type,
+      };
+      objectElements.push(itemElement);
+
+      const EleProperty = {
+        externalId: item.externalId,
+        time: timeDate,
         Workset: workSet,
         Type_Sorting: typeSorting,
         CCSTypeID: CCSTypeID,
         CCSTypeID_Type: CCSTypeID_Type,
         CCSClassCode_Type: CCSClassCode_Type,
       };
-      objectElements.push(itemElement);
+
+      elementProperties.push(EleProperty);
     });
   });
-
-  insertData({
-    projects: idMoeForge,
-    objects,
-    objectElements,
-    users: users,
-  });
+  console.log(">>>>>>>>>>>>", elementProperties);
+  // insertData({
+  //   projects: idMoeForge,
+  //   objects,
+  //   objectElements,
+  //   elementProperties,
+  //   // users: users,
+  // });
   // function to instert the data to MySQL
 });
 
@@ -326,6 +347,7 @@ class FolderApi {
     return result; //only a project
   }
   //fetchContent IS taking from fetchFolderContents
+  
   fetchContent(id, urn) {
     const urnFolder = `https://developer.api.autodesk.com/data/v1/projects/${id}/folders/${urn}/contents`;
 

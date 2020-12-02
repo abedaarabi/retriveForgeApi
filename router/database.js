@@ -33,7 +33,7 @@ const connect = function (callback) {
   });
 };
 //https://github.com/mysqljs/mysql
-function insertData({ projects, objects, objectElements, users }) {
+function insertData({ projects, objects, objectElements, elementProperties }) {
   // console.log(project, objects);
 
   // con.query(
@@ -66,19 +66,31 @@ function insertData({ projects, objects, objectElements, users }) {
     objectElements.map((element) => {
       con.query("INSERT INTO elements SET ?", element, function (err, result) {
         // console.log("1 record inserted in element");
-        // console.log(result);
+        console.log(result);
       });
     });
 
-    users.map((user) => {
-      con.query("INSERT INTO project_users SET ?", user, function (
+    elementProperties.map((element) => {
+      con.query("INSERT INTO elementproperties SET ?", element, function (
         err,
         result
       ) {
-        // console.log(result);
         // console.log("1 record inserted in element");
+        if (result) {
+          console.log("New Properties Added");
+        }
       });
     });
+
+    // users.map((user) => {
+    //   con.query("INSERT INTO project_users SET ?", user, function (
+    //     err,
+    //     result
+    //   ) {
+    //     // console.log(result);
+    //     // console.log("1 record inserted in element");
+    //   });
+    // });
   }
 }
 
