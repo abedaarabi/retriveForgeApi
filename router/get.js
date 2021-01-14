@@ -252,7 +252,7 @@ router.get("/hubs", async (_req, res) => {
         let boo = item.properties;
         if (boo && boo[y]) {
           return boo[y][z];
-        }
+        }l
       }
 
       const typesName = elementsType(item, "Identity Data", "Type Name");
@@ -347,7 +347,7 @@ class FolderApi {
     return result; //only a project
   }
   //fetchContent IS taking from fetchFolderContents
-  
+
   fetchContent(id, urn) {
     const urnFolder = `https://developer.api.autodesk.com/data/v1/projects/${id}/folders/${urn}/contents`;
 
