@@ -33,7 +33,12 @@ const connect = function (callback) {
   });
 };
 //https://github.com/mysqljs/mysql
-function insertData({ projects, objects, objectElements, elementProperties }) {
+function insertData({
+  projects,
+  bim360Objects,
+  objectElements,
+  elementProperties,
+}) {
   // console.log(project, objects);
 
   // con.query(
@@ -49,15 +54,16 @@ function insertData({ projects, objects, objectElements, elementProperties }) {
     const err = "externalId are exist";
 
     projects.map((project) => {
-      con.query("INSERT INTO BIM_360_Project SET ?", project, function (
-        err,
-        result
-      ) {
-        console.log(result);
-      });
+      con.query(
+        "INSERT INTO BIM_360_Project SET ?",
+        project,
+        function (err, result) {
+          console.log(result);
+        }
+      );
     });
 
-    objects.map((object) => {
+    bim360Objects.map((object) => {
       con.query("INSERT INTO objects SET ?", object, function (err, result) {
         // console.log(result);
       });
@@ -71,15 +77,16 @@ function insertData({ projects, objects, objectElements, elementProperties }) {
     });
 
     elementProperties.map((element) => {
-      con.query("INSERT INTO elementproperties SET ?", element, function (
-        err,
-        result
-      ) {
-        // console.log("1 record inserted in element");
-        if (result) {
-          console.log("New Properties Added");
+      con.query(
+        "INSERT INTO elementproperties SET ?",
+        element,
+        function (err, result) {
+          // console.log("1 record inserted in element");
+          if (result) {
+            console.log("New Properties Added");
+          }
         }
-      });
+      );
     });
 
     // users.map((user) => {

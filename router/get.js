@@ -49,6 +49,7 @@ async function delay(ms) {
 }
 
 router.get("/hubs", async (_req, res) => {
+  return;
   const myToken = getStoredToken();
 
   const TOKEN = myToken.access_token;
