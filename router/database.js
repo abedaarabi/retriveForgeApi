@@ -1,6 +1,7 @@
 const dotenv = require("dotenv");
 const result = dotenv.config();
 const mysql = require("mysql");
+const { resolve } = require("path");
 const helper = require("../app");
 // const loading = require("../client/main");
 
@@ -10,7 +11,7 @@ const con = mysql.createConnection({
   host: "localhost",
   user: "root",
   password: sqlPassword,
-  database: "MOE",
+  database: "bim360_project_metadata",
   multipleStatements: true,
 });
 const connect = function (callback) {
@@ -33,29 +34,38 @@ const connect = function (callback) {
   });
 };
 //https://github.com/mysqljs/mysql
-function insertData({
-  projects,
-  bim360Objects,
-  objectElements,
-  elementProperties,
-}) {
-  // console.log(project, objects);
 
-  // con.query(
-  //   "delete from elements; delete from objects; delete from bim_360_project; delete from project_users;",
-  //   project,
-  //   function (err, result) {
-  //     if (err) throw err;
-  //     // insert();
-  //   }
-  // );
+function sqlElement() {
+  return new Promise((resolve, reject) => {
+    con.query("SELECT * FROM element", function (err, result, fields) {
+      if (err) throw err;
+
+      resolve(result);
+    });
+  });
+}
+
+async function insertData({ projects, items, elements, modiId }) {
+  // console.log(project, objects);
+  const boo = await sqlElement();
+
+  modiId.map((id) => {
+    con.query(
+      `DELETE FROM element WHERE objectId LIKE '%${id}%'`,
+
+      function (err, result) {
+        if (err) throw err;
+        console.log(err);
+      }
+    );
+  });
   insert();
   function insert() {
     const err = "externalId are exist";
 
     projects.map((project) => {
       con.query(
-        "INSERT INTO BIM_360_Project SET ?",
+        "INSERT INTO project_name SET ?",
         project,
         function (err, result) {
           console.log(result);
@@ -63,31 +73,31 @@ function insertData({
       );
     });
 
-    bim360Objects.map((object) => {
-      con.query("INSERT INTO objects SET ?", object, function (err, result) {
-        // console.log(result);
+    items.map((object) => {
+      con.query("INSERT INTO item_name SET ?", object, function (err, result) {
+        console.log(err);
       });
     });
 
-    objectElements.map((element) => {
-      con.query("INSERT INTO elements SET ?", element, function (err, result) {
+    elements.map((element) => {
+      con.query("INSERT INTO element SET ?", element, function (err, result) {
         // console.log("1 record inserted in element");
         console.log(result);
       });
     });
 
-    elementProperties.map((element) => {
-      con.query(
-        "INSERT INTO elementproperties SET ?",
-        element,
-        function (err, result) {
-          // console.log("1 record inserted in element");
-          if (result) {
-            console.log("New Properties Added");
-          }
-        }
-      );
-    });
+    // elementProperties.map((element) => {
+    //   con.query(
+    //     "INSERT INTO elementproperties SET ?",
+    //     element,
+    //     function (err, result) {
+    //       // console.log("1 record inserted in element");
+    //       if (result) {
+    //         console.log("New Properties Added");
+    //       }
+    //     }
+    //   );
+    // });
 
     // users.map((user) => {
     //   con.query("INSERT INTO project_users SET ?", user, function (

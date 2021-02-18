@@ -31,7 +31,7 @@ router.get("/projects", async (req, res) => {
   const folders = await Promise.all(
     projects.map((project) => {
       const projectId = project.id;
-      console.log(`Project Id: ${projectId}`);
+      // console.log(`Project Id: ${projectId}`);
 
       //********************************** Top Folder
 
@@ -51,6 +51,7 @@ router.get("/projects", async (req, res) => {
         e.data.data.find(
           (folder) => folder.attributes.name === "Project Files"
         ),
+        project,
       ]);
     })
   );
@@ -60,11 +61,14 @@ router.get("/projects", async (req, res) => {
 
   const foldersContentPromises = [];
 
-  result.forEach(([projectId, folders]) => {
+  result.forEach(([projectId, folders, projectInfo]) => {
     const tmp = folders.map((folder) => {
       return api
         .fetchContent(projectId, folder.id)
-        .then((content) => content.included && [projectId, content.included]);
+        .then(
+          (content) =>
+            content.included && [projectId, content.included, projectInfo]
+        );
     });
 
     foldersContentPromises.push(...tmp);
@@ -75,15 +79,15 @@ router.get("/projects", async (req, res) => {
   );
 
   const derevitveUrns = [];
-  foldersContent.forEach(([projectId, urns]) => {
+  foldersContent.forEach(([projectId, urns, projectInfo]) => {
     urns.forEach((urn) => {
       if (urn.relationships && urn.relationships.derivatives) {
         const derivative = urn.relationships.derivatives.data.id;
-        derevitveUrns.push([projectId, derivative, urn]);
+        derevitveUrns.push([projectId, derivative, urn, projectInfo]);
       }
     });
   });
-  console.log(derevitveUrns[0]);
+
   const seachQuery = req.query.q.toLowerCase();
   const objects = derevitveUrns
     .filter((derevitveUrn) => {
@@ -98,32 +102,39 @@ router.get("/projects", async (req, res) => {
         projectId: derevitveUrn[0],
         derivativeId: derevitveUrn[1],
         payload: derevitveUrn,
+        projectName: derevitveUrn[3].attributes.name,
       };
     });
 
   // TODO: delete me
   res.send(objects);
 });
+
 let timeDate = new Date();
 
 router.post("/metadata", async (req, res) => {
+  let elements = [];
+
   const myToken = getStoredToken();
 
   const TOKEN = myToken.access_token;
 
   const metaDataApi = new MetaData();
   const guids = await metaDataApi.fetchMetadata(req.body);
+
   const properties = await metaDataApi.fetchProperties(guids);
 
   const bim360Objects = properties.map((element) => ({
     projectId: element.attributes.projectId,
     id: element.attributes.id,
     name: element.attributes.displayName,
+    date: element.attributes.lastModifiedTime,
   }));
 
   //=======================================
 
   //***************************************** */
+
   const { tokenBody } = process.env;
   const tokenResponse = await axios({
     url: "https://developer.api.autodesk.com/authentication/v1/authenticate",
@@ -139,7 +150,7 @@ router.post("/metadata", async (req, res) => {
   const Projects_job_number = await Promise.all(
     bim360Objects.map((project) => {
       const projectId = project.projectId.substring(1 && 2);
-      console.log(projectId);
+      // console.log(projectId);
 
       const account_ID = "c65ce02f-8304-4d1d-8684-e55abb2f54a0";
       const response = axios
@@ -160,89 +171,104 @@ router.post("/metadata", async (req, res) => {
 
   //********Push MOE ProjectID to the database********
 
-  const jobNumber = Projects_job_number;
+  // const jobNumber = Projects_job_number;
 
-  const moeProjectId = jobNumber.map((item) => ({
-    id: "b." + item.id,
-    project_jab_number: item.job_number,
-  }));
+  // const moeProjectId = jobNumber.map((item) => ({
+  //   id: "b." + item.id,
+  //   project_job_number: item.job_number,
+  // }));
 
-  const idMoeForge = bim360Objects.map((item) => {
-    const myID = item.projectId;
-    const secondArr = moeProjectId.find((item2) => {
-      return item2.id === myID;
-    });
-    item.project_jab_number = secondArr.project_jab_number;
-    return item;
-  });
+  // const idMoeForge = bim360Objects.map((item) => {
+  //   const myID = item.projectId;
+  //   const secondArr = moeProjectId.find((item2) => {
+  //     return item2.id === myID;
+  //   });
+  //   item.project_job_number = secondArr.project_jab_number;
+  //   return item;
+  // });
+  // console.log(idMoeForge);
 
   //=======================================
 
-  let objectElements = [];
-  let elementProperties = [];
+  const ele = properties.map((property) => {
+    return property.properties.collection
+      .map((item) => {
+        const elementsId = item.externalId;
 
-  console.log(bim360Objects);
-  properties.forEach((property) => {
-    property.properties.collection.forEach((item) => {
-      const elementsId = item.externalId;
+        function elementsType(_x, y, z) {
+          let boo = item.properties;
 
-      function elementsType(_x, y, z) {
-        let boo = item.properties;
-        if (boo && boo[y]) {
-          return boo[y][z];
+          if (boo[y] && boo[y][z]) {
+            return boo[y][z];
+          }
         }
-      }
 
-      const typesName = elementsType(item, "Identity Data", "Type Name");
-      const workSet = elementsType(item, "Identity Data", "Workset");
-      let typeSorting = elementsType(item, "Identity Data", "Type Sorting");
+        const typesName = elementsType(item, "Identity Data", "Type Name");
 
-      const CCSTypeID_Type = elementsType(item, "Other", "CCSTypeID_Type");
-      const CCSClassCode_Type = elementsType(
-        item,
-        "Other",
-        "CCSClassCode_Type"
-      );
-      const CCSTypeID = elementsType(item, "Other", "CCSTypeID");
+        const workSet = elementsType(item, "Identity Data", "Workset");
+        const typeSorting = elementsType(item, "Identity Data", "Type Sorting");
 
-      // console.log(`Element: ${item.name} Type: ${typesName}`);
+        const CCSTypeID_Type = elementsType(item, "Other", "CCSTypeID_Type");
 
-      const itemElement = {
-        name: item.name,
-        TypeName: typesName,
+        const CCSClassCode_Type = elementsType(
+          item,
+          "Other",
+          "CCSClassCode_Type"
+        );
+        const CCSTypeID = elementsType(item, "Other", "CCSTypeID");
 
-        objectId: property.attributes.id,
-        time: timeDate,
-        externalId: item.externalId,
-        // Workset: workSet,
-        // Type_Sorting: typeSorting,
-        // CCSTypeID: CCSTypeID,
-        // CCSTypeID_Type: CCSTypeID_Type,
-        // CCSClassCode_Type: CCSClassCode_Type,
-      };
-      objectElements.push(itemElement);
+        //******************************* Counted Element ******************************* */
 
-      const EleProperty = {
-        externalId: item.externalId,
-        time: timeDate,
-        Workset: workSet,
-        Type_Sorting: typeSorting,
-        CCSTypeID: CCSTypeID,
-        CCSTypeID_Type: CCSTypeID_Type,
-        CCSClassCode_Type: CCSClassCode_Type,
-      };
+        //*******************************Element Array******************************* */
 
-      elementProperties.push(EleProperty);
-      // console.log(">>>>>>>>>>>>", EleProperty);
-    });
+        const itemElement = {
+          name: item.name,
+          TypeName: typesName,
+          objectId: property.attributes.id,
+
+          externalId: item.externalId,
+          Workset: workSet,
+          Type_Sorting: typeSorting,
+          CCSTypeID: CCSTypeID,
+          CCSTypeID_Type: CCSTypeID_Type,
+          CCSClassCode_Type: CCSClassCode_Type,
+        };
+        if (itemElement.TypeName) {
+          elements.push(itemElement);
+          return itemElement;
+        }
+      })
+      .filter((data) => data);
   });
 
+  // console.log(bim360Objects);
+  const objCount = bim360Objects.map((bim360Object, index) => {
+    bim360Object.elementsCount = ele[index].length;
+
+    return bim360Object;
+  });
+
+  const modiId = objCount.map((objId) => {
+    const Id = objId.id.split("?")[0];
+
+    return Id;
+  });
+
+  console.log(modiId);
+  const body = req.body;
+
+  const projectIds = body.map((data) => {
+    const projectName = data[3].attributes.name;
+    const projectID = data[0];
+    return { projectName, projectID };
+  });
+
+  res.send({ objCount, projectIds, elements, modiId });
   insertData({
-    projects: idMoeForge,
-    bim360Objects,
-    objectElements,
-    elementProperties,
-    // users: users,
+    projects: projectIds,
+    items: objCount,
+    elements: elements,
+    modiId,
   });
 });
 

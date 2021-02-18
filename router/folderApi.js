@@ -8,15 +8,20 @@ class FolderApi {
     const promises = folders.map((project) => {
       // const id = project[0];
       // const urn = project[1].id;
+      console.log(project[2].attributes.name);
 
-      const [id, { id: urn }] = project;
+      const [id, { id: urn }, projectInfo] = project;
 
-      return this.fetchContent(id, urn).then((content) => [id, content.data]);
+      return this.fetchContent(id, urn).then((content) => [
+        id,
+        content.data,
+        projectInfo,
+      ]);
       //calling
     });
 
     const result = await Promise.all(promises);
-
+    // console.log(result);
     return result; //only a project
   }
   //fetchContent IS taking from fetchFolderContents

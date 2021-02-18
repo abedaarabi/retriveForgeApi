@@ -3,12 +3,6 @@ const { getStoredToken } = require("./oauth");
 const myToken = getStoredToken();
 const TOKEN = myToken.access_token;
 
-function getHubAndProject() {
-
-
-
-
-    
-}
+function getHubAndProject() {}
 
 module.exports = { getHubAndProject };

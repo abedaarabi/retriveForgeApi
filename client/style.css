@@ -1,0 +1,26 @@
+#projectList {
+  list-style: none;
+  margin: 40px;
+  width: auto;
+  background-color: rgb(65, 202, 84);
+  color: white;
+}
+
+#project {
+  width: 300px;
+  color: #413c3c;
+  height: 28px;
+  padding-left: 10px;
+  text-decoration: none;
+  background-color: #46b7ec;
+  background-repeat: repeat-x;
+  border-radius: 5px; /*up to date browsers support this, but you can add prefixes if you want*/
+  border: none;
+  border: 0;
+  border-right: 10px red solid;
+}
+
+h4 {
+  margin: 30px;
+  color: #777777;
+}

@@ -18,32 +18,32 @@ function removeLoading(c) {
   document.getElementById(c).remove();
 }
 
-function showcomlete() {
-  const node = document.createElement("div");
-  node.classList = "alert alert-success";
+// function showcomlete() {
+//   const node = document.createElement("div");
+//   node.classList = "alert alert-success";
 
-  const textnode = document.createTextNode(
-    "Successed! \n Data Inserted in to MOE Database."
-  );
-  node.appendChild(textnode); // Append the text to <li>
-  document.getElementById("myList").appendChild(node);
+//   const textnode = document.createTextNode(
+//     "Successed! \n Data Inserted in to MOE Database."
+//   );
+//   node.appendChild(textnode); // Append the text to <li>
+//   document.getElementById("myList").appendChild(node);
 
-  // await removeElement("myList");
-}
+//   // await removeElement("myList");
+// }
 
-function showErr() {
-  const node = document.createElement("div");
-  node.classList = "alert alert-danger";
+// function showErr() {
+//   const node = document.createElement("div");
+//   node.classList = "alert alert-danger";
 
-  const textnode = document.createTextNode("Error!");
-  node.appendChild(textnode); // Append the text to <li>
-  document.getElementById("myList").appendChild(node);
+//   const textnode = document.createTextNode("Error!");
+//   node.appendChild(textnode); // Append the text to <li>
+//   document.getElementById("myList").appendChild(node);
 
-  // await removeElement("myList");
-}
+//   // await removeElement("myList");
+// }
 
 btn.addEventListener("click", async (e) => {
-  // e.preventDefault();
+  e.preventDefault();
   // try {
   //   let response = await fetch("/hubs", {
   //     method: "get",
@@ -67,6 +67,7 @@ btn.addEventListener("click", async (e) => {
   // } catch (err) {
   //   console.log(err);
   // }
+
   const chekedCheckBoxes = document.querySelectorAll(
     "input[type=checkbox]:checked"
   );
@@ -79,7 +80,7 @@ btn.addEventListener("click", async (e) => {
       return ids.includes(object.derivativeId);
     })
     .map((object) => object.payload);
-  console.log(selectedObjects);
+  // console.log(selectedObjects);
 
   const response = await (
     await fetch(`/metadata`, {
@@ -102,8 +103,9 @@ input.addEventListener("keyup", async function fetchProject(e) {
     const response = await (
       await fetch(`/projects?q=${value}`).catch((err) => console.log(err))
     ).json();
+
     objects = response;
-    console.log(response);
+    // console.log(response);
     let output;
     response.map((object) => {
       output += `<li  
