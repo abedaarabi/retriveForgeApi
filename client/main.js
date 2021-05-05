@@ -100,6 +100,7 @@ input.addEventListener("keyup", async function fetchProject(e) {
   if (!value) {
     document.getElementById("projectList").innerHTML = "";
   } else {
+    
     const response = await (
       await fetch(`/projects?q=${value}`).catch((err) => console.log(err))
     ).json();

@@ -216,6 +216,25 @@ router.post("/metadata", async (req, res) => {
           "CCSClassCode_Type"
         );
         const CCSTypeID = elementsType(item, "Other", "CCSTypeID");
+        /**BIM7AA */
+        const BIM7AATypeName = elementsType(item, "Other", "BIM7AATypeName");
+        const BIM7AATypeID = elementsType(item, "Other", "BIM7AATypeID");
+        const BIM7AATypeDescription = elementsType(
+          item,
+          "Other",
+          "BIM7AATypeDescription"
+        );
+        const BIM7AATypeNumber = elementsType(
+          item,
+          "Other",
+          "BIM7AATypeNumber"
+        );
+        const BIM7AATypeCode = elementsType(item, "Other", "BIM7AATypeCode");
+        const BIM7AATypeComments = elementsType(
+          item,
+          "Other",
+          "BIM7AATypeComments"
+        );
 
         //******************************* Counted Element ******************************* */
 
@@ -232,6 +251,12 @@ router.post("/metadata", async (req, res) => {
           CCSTypeID: CCSTypeID,
           CCSTypeID_Type: CCSTypeID_Type,
           CCSClassCode_Type: CCSClassCode_Type,
+          BIM7AATypeName: BIM7AATypeName,
+          BIM7AATypeDescription: BIM7AATypeDescription,
+          BIM7AATypeID: BIM7AATypeID,
+          BIM7AATypeNumber: BIM7AATypeNumber,
+          BIM7AATypeCode: BIM7AATypeCode,
+          BIM7AATypeComments: BIM7AATypeComments,
         };
         if (itemElement.TypeName) {
           elements.push(itemElement);
