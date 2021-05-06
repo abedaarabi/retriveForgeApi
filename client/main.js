@@ -94,22 +94,35 @@ btn.addEventListener("click", async (e) => {
   console.log(response);
 });
 
-input.addEventListener("keyup", async function fetchProject(e) {
-  const value = e.target.value;
-  console.log("start", value);
-  if (!value) {
-    document.getElementById("projectList").innerHTML = "";
-  } else {
-    
-    const response = await (
-      await fetch(`/projects?q=${value}`).catch((err) => console.log(err))
-    ).json();
+const debounce = (fn, delay) => {
+  let timeoutID;
+  return function (...args) {
+    if (timeoutID) {
+      clearTimeout(timeoutID);
+    }
+    timeoutID = setTimeout(() => {
+      fn(...args);
+    }, delay);
+  };
+};
 
-    objects = response;
-    // console.log(response);
-    let output;
-    response.map((object) => {
-      output += `<li  
+input.addEventListener(
+  "keyup",
+  debounce(async function fetchProject(e) {
+    const value = e.target.value;
+    console.log("start", value);
+    if (!value) {
+      document.getElementById("projectList").innerHTML = "";
+    } else {
+      const response = await (
+        await fetch(`/projects?q=${value}`).catch((err) => console.log(err))
+      ).json();
+
+      objects = response;
+      // console.log(response);
+      let output;
+      response.map((object) => {
+        output += `<li  
                 data-id=${object.derivativeId}>
                   <input
                     type="checkbox"
@@ -117,10 +130,11 @@ input.addEventListener("keyup", async function fetchProject(e) {
                   ></input>
                   ${object.name}
         </li>`;
-      document.getElementById("projectList").innerHTML = output;
-    });
-  }
-});
+        document.getElementById("projectList").innerHTML = output;
+      });
+    }
+  }, 2000)
+);
 
 async function delay(ms) {
   return new Promise((resolve) => {
