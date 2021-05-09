@@ -133,7 +133,7 @@ input.addEventListener(
         document.getElementById("projectList").innerHTML = output;
       });
     }
-  }, 2000)
+  }, 3000)
 );
 
 async function delay(ms) {

@@ -15,10 +15,13 @@
     "express": "^4.17.1",
     "forever": "^3.0.0",
     "forge-apis": "^0.7.3",
+    "knex": "^0.95.4",
     "multer": "^1.4.2",
     "mysql": "^2.18.1",
+    "mysql2": "^2.2.5",
     "nodemon": "^2.0.4",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "pg": "^8.6.0"
   },
   "devDependencies": {},
   "repository": {

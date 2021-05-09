@@ -3,16 +3,17 @@ const result = dotenv.config();
 const mysql = require("mysql");
 const { resolve } = require("path");
 const helper = require("../app");
+
+const path = require("path");
+require("dotenv").config({ path: "../.env" });
 // const loading = require("../client/main");
 
-const { sqlPassword } = process.env;
-
 const con = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: sqlPassword,
-  database: "bim360_project_metadata",
-  multipleStatements: true,
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
 });
 const connect = function (callback) {
   // callback();
