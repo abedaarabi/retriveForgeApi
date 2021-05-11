@@ -1,40 +1,42 @@
 const dotenv = require("dotenv");
 const result = dotenv.config();
-const mysql = require("mysql");
+// const mysql = require("mysql");
 const { resolve } = require("path");
 const helper = require("../app");
-
+const sql = require("mssql");
 const path = require("path");
 require("dotenv").config({ path: "../.env" });
-// const loading = require("../client/main");
 
-const con = mysql.createConnection({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
+const con = {
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-});
-const connect = function (callback) {
-  // callback();
-
-  con.connect(function (err) {
-    if (err) throw err;
-    console.log("Connected MySQL Database!");
-
-    /***************** CREATE TABLE********************* */
-
-    // var sql =
-    //   "CREATE TABLE BIM_360_Project (project VARCHAR(255),project_id VARCHAR(255), K08 VARCHAR(255),K09 VARCHAR(255), name VARCHAR(255), Walls VARCHAR(255), StructuralColumns VARCHAR(255),Time VARCHAR(255))";
-    // con.query(sql, function (err, result) {
-    //   if (err) throw err;
-    //   console.log("Table created");
-    // });
-    // console.log(con);
-    callback();
-  });
+  server: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT),
+  options: {
+    trustedConnection: true,
+    encrypt: true,
+    enableArithAbort: true,
+    trustServerCertificate: true,
+  },
+  pool: {
+    max: 10,
+    min: 0,
+    idleTimeoutMillis: 30000,
+  },
 };
-//https://github.com/mysqljs/mysql
+
+const connect = async () => {
+  try {
+    // make sure that any items are correctly URL encoded in the connection string
+    await sql.connect(con);
+
+    console.log("result");
+  } catch (err) {
+    // ... error checks
+    console.log(err);
+  }
+};
 
 function sqlElement() {
   return new Promise((resolve, reject) => {
@@ -111,5 +113,4 @@ async function insertData({ projects, items, elements, modiId }) {
     // });
   }
 }
-
 module.exports = { connect, insertData };
