@@ -1,12 +1,8 @@
 exports.up = function (knex) {
   return knex.schema
     .createTable("project_name", function (table) {
-      table
-        .string("projectID", { primaryKey: true })
-        .unique()
-        .notNullable()
-        .index();
-      table.string("projectName");
+      table.string("projectID").unique().primary().notNullable().index();
+      table.string("projectName").notNullable();
     })
 
     .createTable("item_name", function (table) {
@@ -43,7 +39,6 @@ exports.up = function (knex) {
       table.string("BIM7AATypeNumber");
       table.string("BIM7AATypeCode");
       table.string("BIM7AATypeComments");
-      
     });
 };
 

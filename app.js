@@ -22,6 +22,7 @@ app.use("/", router);
 
 const stratServer = function () {
   app.listen(PORT, console.log(`server is running on ${PORT} ` || 8080));
-};
 
-connect(stratServer);
+  connect();
+};
+stratServer();

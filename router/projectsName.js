@@ -258,6 +258,7 @@ router.post("/metadata", async (req, res) => {
           BIM7AATypeCode: BIM7AATypeCode,
           BIM7AATypeComments: BIM7AATypeComments,
         };
+
         if (itemElement.TypeName) {
           elements.push(itemElement);
           return itemElement;
