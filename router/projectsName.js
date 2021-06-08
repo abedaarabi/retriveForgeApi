@@ -289,13 +289,14 @@ router.post("/metadata", async (req, res) => {
     return { projectName, projectID };
   });
 
-  res.send({ objCount, projectIds, elements, modiId });
-  insertData({
+  const x = await insertData({
     projects: projectIds,
     items: objCount,
     elements: elements,
     modiId,
   });
+
+  res.send({ objCount, projectIds, elements, modiId, x });
 });
 
 module.exports = router;

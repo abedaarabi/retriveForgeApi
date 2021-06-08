@@ -19,7 +19,7 @@ const con = {
   pool: {
     max: 10,
     min: 0,
-    idleTimeoutMillis: 100000,
+    idleTimeoutMillis: 1500000,
   },
 };
 
@@ -34,18 +34,10 @@ const connect = async () => {
 };
 
 async function insertData({ projects, items, elements, modiId }) {
-  modiId.map((id) => {
-    sql.query(
-      `DELETE FROM element WHERE objectId LIKE '%${id}%'`,
-
-      function (err, result) {
-        if (err) console.log(`Error ${err.message}`);
-        else {
-          console.log(result);
-        }
-      }
-    );
+  const promises = modiId.map((id) => {
+    return sql.query(`DELETE FROM element WHERE objectId LIKE '%${id}%'`);
   });
+  const res = await Promise.all(promises);
 
   async function insert() {
     //projects
@@ -60,18 +52,18 @@ async function insertData({ projects, items, elements, modiId }) {
       nullable: false,
       primary: true,
     });
-    await projects.map((project) => {
-      return tablePro.rows.add(project.projectID, project.projectName);
+    projects.map((project) => {
+      tablePro.rows.add(project.projectID, project.projectName);
     });
-    request.bulk(tablePro, (err, result) => {
-      if (err) console.log(`Error ${err.message}`);
-      else {
-        console.log(result);
-      }
-    });
+    try {
+      const result = await request.bulk(tablePro);
+      console.log(result);
+    } catch (error) {
+      console.log("project error", error);
+    }
+
     //items
 
-    // const request = new sql.Request();
     let tableItem = new sql.Table("item_name");
 
     tableItem.create = true;
@@ -89,8 +81,8 @@ async function insertData({ projects, items, elements, modiId }) {
     tableItem.columns.add("projectId", sql.VarChar(255), {
       nullable: false,
     });
-    await items.map((object) => {
-      return tableItem.rows.add(
+    items.map((object) => {
+      tableItem.rows.add(
         object.date,
         object.elementsCount,
         object.id,
@@ -98,12 +90,13 @@ async function insertData({ projects, items, elements, modiId }) {
         object.projectId
       );
     });
-    request.bulk(tableItem, (err, result) => {
-      if (err) console.log(`Error ${err.message}`);
-      else {
-        console.log(result);
-      }
-    });
+
+    try {
+      const result = await request.bulk(tableItem);
+      console.log(result);
+    } catch (err) {
+      console.log(`items error ${err.message}`);
+    }
     //elements
     let tableElt = new sql.Table("element");
     tableElt.create = true;
@@ -125,8 +118,8 @@ async function insertData({ projects, items, elements, modiId }) {
     tableElt.columns.add("BIM7AATypeCode", sql.VarChar(255));
     tableElt.columns.add("BIM7AATypeComments", sql.VarChar(255));
 
-    await elements.map(async (element) => {
-      return tableElt.rows.add(
+    elements.forEach((element) => {
+      tableElt.rows.add(
         element.name,
         element.TypeName,
         element.Type_Sorting,
@@ -144,17 +137,20 @@ async function insertData({ projects, items, elements, modiId }) {
         element.BIM7AATypeComments
       );
     });
-    // const request = new sql.Request();
-    request.bulk(tableElt, (err, result) => {
-      console.log("¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤");
-      if (err) console.log(`Error ${err.message}`);
-      else {
-        console.log(result.rowsAffected);
-      }
-      console.log("¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤");
-    });
+
+    let result;
+    try {
+      result = await request.bulk(tableElt);
+      console.log(result);
+    } catch (error) {
+      console.log("table element error", error);
+    }
+    return result;
   }
-  insert();
+
+  const result = await insert();
+
+  return { deleted: res, elements: result };
 }
 module.exports = { connect, insertData };
 

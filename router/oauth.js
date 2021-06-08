@@ -51,10 +51,11 @@ async function authorize(code) {
       client_secret: `${client_secret}`,
       grant_type: "authorization_code",
       code: code,
-      redirect_uri: "http://84e08f24b050.ngrok.io/token/oauth/callback",
+      redirect_uri: "http://3bdde17c826b.ngrok.io/token/oauth/callback",
     }),
   });
 }
+
 async function refreshToken(token) {
   const url = `https://developer.api.autodesk.com/authentication/v1/gettoken`;
   return axios({
