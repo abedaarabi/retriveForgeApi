@@ -4,7 +4,7 @@
   "description": "Retreve Data from Froge API",
   "main": "app.js",
   "scripts": {
-    "start": "nodemon -e js app.js"
+    "dev": "nodemon -e js app.js"
   },
   "author": "",
   "license": "ISC",

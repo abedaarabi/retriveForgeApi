@@ -20,9 +20,10 @@ app.use("/", router);
 
 // app.use("/api/forge", oauthRouter);
 
-const stratServer = function () {
-  app.listen(PORT, console.log(`server is running on ${PORT} ` || 8080));
-
-  connect();
-};
-stratServer();
+(async () => {
+  const stratServer = () => {
+    app.listen(PORT, console.log(`server is running on ${PORT} ` || 8080));
+  };
+  await connect();
+  stratServer();
+})();
