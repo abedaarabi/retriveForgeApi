@@ -5,6 +5,7 @@ const result = dotenv.config();
 const bodyParser = require("body-parser");
 
 const { connect } = require("./router/database");
+const projectName = require("./router/projectsName");
 
 app.use(express.static("client"));
 
@@ -13,7 +14,7 @@ const { router } = require("./router/oauth");
 const PORT = process.env.PORT;
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-
+app.use("/", projectName);
 app.use("/", getRoute);
 app.use("/", router);
 
@@ -21,6 +22,7 @@ app.use("/", router);
 
 const stratServer = function () {
   app.listen(PORT, console.log(`server is running on ${PORT} ` || 8080));
-};
 
-connect(stratServer);
+  connect();
+};
+stratServer();
