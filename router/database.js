@@ -156,6 +156,14 @@ module.exports = { connect, insertData };
 
 //-----------------------------
 
+async function awsome(param) {
+  try {
+    const result = await request.bulk(param);
+    return result;
+  } catch (err) {
+    console.log(`items error ${err.message}`);
+  }
+}
 // elementProperties.map((element) => {
 //   con.query(
 //     "INSERT INTO elementproperties SET ?",
