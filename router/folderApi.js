@@ -38,6 +38,7 @@ class FolderApi {
         })
         // .then((x) => (console.log(x.data), x))
         .then((response) => response.data)
+        .catch((err) => err)
     );
   }
 }

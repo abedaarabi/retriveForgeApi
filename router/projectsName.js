@@ -63,6 +63,7 @@ router.get("/projects", async (req, res) => {
 
   result.forEach(([projectId, folders, projectInfo]) => {
     const tmp = folders.map((folder) => {
+      // console.log(folder);
       return api
         .fetchContent(projectId, folder.id)
         .then(
