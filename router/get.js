@@ -14,6 +14,9 @@ const { log } = require("console");
 const { getStoredToken } = require("./oauth");
 const { loadavg } = require("os");
 const { emitWarning } = require("process");
+const { User } = require("./users");
+const { MetaData } = require("./metaData");
+const { FolderApi } = require("./folderApi");
 
 const myToken = getStoredToken();
 
@@ -46,6 +49,7 @@ async function delay(ms) {
 }
 
 router.get("/hubs", async (_req, res) => {
+  return;
   const myToken = getStoredToken();
 
   const TOKEN = myToken.access_token;
@@ -62,7 +66,7 @@ router.get("/hubs", async (_req, res) => {
       Authorization: `Bearer ${TOKEN}`,
     },
   });
-
+  console.log({ moeHub_id, hub });
   //***************************************** */
 
   const tokenResponse = await axios({
@@ -132,7 +136,6 @@ router.get("/hubs", async (_req, res) => {
   //******************************* Folder Contents
   const api = new FolderApi();
   const result = await api.fetchFolderContents(folders);
-  console.log(result);
 
   const foldersContentPromises = [];
 
@@ -162,8 +165,6 @@ router.get("/hubs", async (_req, res) => {
 
   console.log("start");
 
-  //**********************TRANSLATION*************************** */
-
   //***************************** User Information
   // const userMetaData = new User();
 
@@ -185,15 +186,15 @@ router.get("/hubs", async (_req, res) => {
   const metaDataApi = new MetaData();
   const guids = await metaDataApi.fetchMetadata(derevitveUrns);
 
-  const foo1 = guids.forEach((guid, index) => {
-    if (guid[2].name.match(/INOL_K08_L1_F2.rvt/gim)) {
+  guids.forEach((guid, index) => {
+    if (guid[2].name) {
       console.log(guid[2].name, index);
     }
   });
-  console.log(foo1);
-  const properties = await metaDataApi.fetchProperties([guids[146]]);
 
- 
+  const properties = await metaDataApi.fetchProperties([guids[30]]);
+  console.log(properties);
+  return;
   // function objectName(b) {
   //   return properties.find((property) => property.attributes.name === b);
   // }
@@ -252,7 +253,7 @@ router.get("/hubs", async (_req, res) => {
         let boo = item.properties;
         if (boo && boo[y]) {
           return boo[y][z];
-        }l
+        }
       }
 
       const typesName = elementsType(item, "Identity Data", "Type Name");
@@ -307,131 +308,5 @@ router.get("/hubs", async (_req, res) => {
   // });
   // function to instert the data to MySQL
 });
-
-class User {
-  async userInfo(projectId) {
-    const url = `https://developer.api.autodesk.com/bim360/admin/v1/projects/${projectId}/users?limit=200`,
-      contents = await axios({
-        url,
-        method: "get",
-        headers: {
-          Authorization: `Bearer ${TOKEN}`,
-        },
-      });
-
-    const metaData = await contents.data.results;
-
-    return metaData.map((user) => ({
-      userName: user.name,
-      userEmail: user.email,
-      userId: user.id,
-      projectId: projectId,
-    }));
-  }
-}
-
-class FolderApi {
-  async fetchFolderContents(folders) {
-    const promises = folders.map((project) => {
-      // const id = project[0];
-      // const urn = project[1].id;
-
-      const [id, { id: urn }] = project;
-
-      return this.fetchContent(id, urn).then((content) => [id, content.data]);
-      //calling
-    });
-
-    const result = await Promise.all(promises);
-
-    return result; //only a project
-  }
-  //fetchContent IS taking from fetchFolderContents
-
-  fetchContent(id, urn) {
-    const urnFolder = `https://developer.api.autodesk.com/data/v1/projects/${id}/folders/${urn}/contents`;
-
-    return (
-      axios
-        .get(urnFolder, {
-          headers: {
-            Authorization: `Bearer ${TOKEN}`,
-          },
-        })
-        // .then((x) => (console.log(x.data), x))
-        .then((response) => response.data)
-    );
-  }
-}
-
-class MetaData {
-  async fetchMetadata(foldersContent) {
-    const guids = await Promise.all(
-      foldersContent.map(([projectId, id, folderContent]) => {
-        const url = `https://developer.api.autodesk.com/modelderivative/v2/designdata/${id}/metadata`;
-
-        const contentsPromise = axios
-          .get(url, {
-            headers: {
-              Authorization: `Bearer ${TOKEN}`,
-            },
-          })
-
-          .catch((e) => e);
-
-        return contentsPromise.then((response) => {
-          let metadaEntry;
-
-          if (!response.data) {
-            return;
-          }
-          metadaEntry = response.data.data.metadata.find(
-            (metadata) => metadata.role === "3d"
-          );
-
-          if (!(metadaEntry && metadaEntry.guid)) {
-            return;
-          }
-
-          return [
-            id,
-            metadaEntry && metadaEntry.guid,
-            { ...folderContent, ...folderContent.attributes, projectId },
-          ];
-        });
-      })
-    );
-
-    return guids.filter((guid) => guid);
-  }
-
-  async fetchProperties(guids) {
-    const data = await Promise.all(
-      guids.map(([urn, guid, attributes]) => {
-        const url = `https://developer.api.autodesk.com/modelderivative/v2/designdata/${urn}/metadata/${guid}/properties?forceget=true`;
-        // console.log(url);
-        const contents = axios
-          .get(url, {
-            headers: {
-              Authorization: `Bearer ${TOKEN}`,
-            },
-          })
-          .catch((e) => e);
-        return contents.then((response) => {
-          if (!response.data) {
-            return;
-          }
-          return {
-            attributes,
-            properties: response.data.data,
-          };
-        });
-        // .then((data) => console.log(data));
-      })
-    );
-
-    return data.filter((data) => data);
-  }
-}
 
 module.exports = router;

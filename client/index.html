@@ -17,7 +17,9 @@
     />
 
     <title>BIM 360 Project Data</title>
+    <link rel="stylesheet" href="style.css" />
   </head>
+  s
   <body class="bg-dark">
     <div class="container">
       <div class="row">
@@ -74,12 +76,14 @@
                 </div>
               </div>
               <div>
-                <input type="text" />
+                <h4>Type Project Name</h4>
+                <input id="project" type="text" />
+                <div id="projectList"></div>
               </div>
               <div class="pt-5">
                 <button class="btn btn-warning">
                   <a
-                    href="https://developer.api.autodesk.com/authentication/v1/authorize?response_type=code&client_id=nyMtEYw2ZYhMrTpTmTt5ovMG9ZchMvDL&redirect_uri=http%3A%2F%2F841adb345ae2.ngrok.io%2Ftoken%2Foauth%2Fcallback&scope=account%3Aread%20data%3Aread%20data%3Acreate%20data%3Awrite"
+                    href="https://developer.api.autodesk.com/authentication/v1/authorize?response_type=code&client_id=7KQ4vqb7uJFWgWYgNRnhE6T5ZDnbxPcn&redirect_uri=http%3A%2F%2Fyounesmln.ngrok.io%2Ftoken%2Foauth%2Fcallback&scope=account%3Aread%20data%3Aread%20data%3Acreate%20data%3Awrite"
                     >Log in</a
                   >
                 </button>
@@ -100,12 +104,6 @@
                 </div>
                 <div id="myList" class="pt-5"></div>
               </form>
-
-              <style>
-                #loading {
-                  display: none;
-                }
-              </style>
             </div>
           </div>
         </div>
@@ -129,6 +127,7 @@
       integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV"
       crossorigin="anonymous"
     ></script>
+
     <script type="text/javascript" src="main.js"></script>
   </body>
 </html>

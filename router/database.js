@@ -1,97 +1,214 @@
 const dotenv = require("dotenv");
 const result = dotenv.config();
-const mysql = require("mysql");
+// const mysql = require("mysql");
+const { resolve } = require("path");
 const helper = require("../app");
-// const loading = require("../client/main");
+const sql = require("mssql");
+const path = require("path");
+require("dotenv").config({ path: "../.env" });
 
-const { sqlPassword } = process.env;
-
-const con = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: sqlPassword,
-  database: "MOE",
-  multipleStatements: true,
-});
-const connect = function (callback) {
-  // callback();
-
-  con.connect(function (err) {
-    if (err) throw err;
-    console.log("Connected MySQL Database!");
-
-    /***************** CREATE TABLE********************* */
-
-    // var sql =
-    //   "CREATE TABLE BIM_360_Project (project VARCHAR(255),project_id VARCHAR(255), K08 VARCHAR(255),K09 VARCHAR(255), name VARCHAR(255), Walls VARCHAR(255), StructuralColumns VARCHAR(255),Time VARCHAR(255))";
-    // con.query(sql, function (err, result) {
-    //   if (err) throw err;
-    //   console.log("Table created");
-    // });
-    // console.log(con);
-    callback();
-  });
+const con = {
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  server: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT),
+  options: {
+    trustServerCertificate: true,
+  },
+  pool: {
+    max: 10,
+    min: 0,
+    idleTimeoutMillis: 1500000,
+  },
 };
-//https://github.com/mysqljs/mysql
-function insertData({ projects, objects, objectElements, elementProperties }) {
-  // console.log(project, objects);
 
-  // con.query(
-  //   "delete from elements; delete from objects; delete from bim_360_project; delete from project_users;",
-  //   project,
-  //   function (err, result) {
-  //     if (err) throw err;
-  //     // insert();
-  //   }
-  // );
-  insert();
-  function insert() {
-    const err = "externalId are exist";
+const connect = async () => {
+  try {
+    const pool = await sql.connect(con);
 
+    console.log(`Connecting to database ${pool.config.user}`);
+  } catch (err) {
+    console.log(`Error ${err}`);
+  }
+};
+
+async function insertData({ projects, items, elements, modiId }) {
+  const promises = modiId.map((id) => {
+    return sql.query(`DELETE FROM element WHERE objectId LIKE '%${id}%'`);
+  });
+  const res = await Promise.all(promises);
+
+  async function insert() {
+    //projects
+    let tablePro = new sql.Table("project_name");
+    const request = new sql.Request();
+    tablePro.create = true;
+    tablePro.columns.add("projectID", sql.VarChar(255), {
+      nullable: false,
+      primary: true,
+    });
+    tablePro.columns.add("projectName", sql.VarChar(255), {
+      nullable: false,
+      primary: true,
+    });
     projects.map((project) => {
-      con.query("INSERT INTO BIM_360_Project SET ?", project, function (
-        err,
-        result
-      ) {
-        console.log(result);
-      });
+      tablePro.rows.add(project.projectID, project.projectName);
+    });
+    try {
+      const result = await request.bulk(tablePro);
+      console.log(result);
+    } catch (error) {
+      console.log("project error", error);
+    }
+
+    //items
+
+    let tableItem = new sql.Table("item_name");
+
+    tableItem.create = true;
+    tableItem.columns.add("date", sql.VarChar(255), {
+      nullable: false,
+      unique: true,
+    });
+    tableItem.columns.add("elementsCount", sql.Int());
+    tableItem.columns.add("id", sql.VarChar(255), {
+      nullable: false,
+      primary: true,
+      unique: true,
+    });
+    tableItem.columns.add("name", sql.VarChar(255));
+    tableItem.columns.add("projectId", sql.VarChar(255), {
+      nullable: false,
+    });
+    items.map((object) => {
+      tableItem.rows.add(
+        object.date,
+        object.elementsCount,
+        object.id,
+        object.name,
+        object.projectId
+      );
     });
 
-    objects.map((object) => {
-      con.query("INSERT INTO objects SET ?", object, function (err, result) {
-        // console.log(result);
-      });
+    try {
+      const result = await request.bulk(tableItem);
+      console.log(result);
+    } catch (err) {
+      console.log(`items error ${err.message}`);
+    }
+    //elements
+    let tableElt = new sql.Table("element");
+    tableElt.create = true;
+    tableElt.columns.add("name", sql.VarChar(255));
+    tableElt.columns.add("TypeName", sql.VarChar(255));
+    tableElt.columns.add("Type_Sorting", sql.VarChar(255));
+    tableElt.columns.add("Workset", sql.VarChar(255));
+    tableElt.columns.add("CCSTypeID_Type", sql.VarChar(255));
+    tableElt.columns.add("CCSTypeID", sql.VarChar(255));
+    tableElt.columns.add("CCSClassCode_Type", sql.VarChar(255));
+    tableElt.columns.add("externalId", sql.VarChar(255));
+    tableElt.columns.add("objectId", sql.VarChar(255), {
+      nullable: false,
+    });
+    tableElt.columns.add("BIM7AATypeName", sql.VarChar(255));
+    tableElt.columns.add("BIM7AATypeDescription", sql.VarChar(255));
+    tableElt.columns.add("BIM7AATypeID", sql.VarChar(255));
+    tableElt.columns.add("BIM7AATypeNumber", sql.VarChar(255));
+    tableElt.columns.add("BIM7AATypeCode", sql.VarChar(255));
+    tableElt.columns.add("BIM7AATypeComments", sql.VarChar(255));
+
+    elements.forEach((element) => {
+      tableElt.rows.add(
+        element.name,
+        element.TypeName,
+        element.Type_Sorting,
+        element.Workset,
+        element.CCSTypeID_Type,
+        element.CCSTypeID,
+        element.CCSClassCode_Type,
+        element.externalId,
+        element.objectId,
+        element.BIM7AATypeName,
+        element.BIM7AATypeDescription,
+        element.BIM7AATypeID,
+        element.BIM7AATypeNumber,
+        element.BIM7AATypeCode,
+        element.BIM7AATypeComments
+      );
     });
 
-    objectElements.map((element) => {
-      con.query("INSERT INTO elements SET ?", element, function (err, result) {
-        // console.log("1 record inserted in element");
-        console.log(result);
-      });
-    });
+    let result;
+    try {
+      result = await request.bulk(tableElt);
+      console.log(result);
+    } catch (error) {
+      console.log("table element error", error);
+    }
+    return result;
+  }
 
-    elementProperties.map((element) => {
-      con.query("INSERT INTO elementproperties SET ?", element, function (
-        err,
-        result
-      ) {
-        // console.log("1 record inserted in element");
-        if (result) {
-          console.log("New Properties Added");
-        }
-      });
-    });
+  const result = await insert();
 
-    // users.map((user) => {
-    //   con.query("INSERT INTO project_users SET ?", user, function (
-    //     err,
-    //     result
-    //   ) {
-    //     // console.log(result);
-    //     // console.log("1 record inserted in element");
-    //   });
-    // });
+  return { deleted: res, elements: result };
+}
+module.exports = { connect, insertData };
+
+//-----------------------------
+
+async function awsome(param) {
+  try {
+    const result = await request.bulk(param);
+    return result;
+  } catch (err) {
+    console.log(`items error ${err.message}`);
   }
 }
+// elementProperties.map((element) => {
+//   con.query(
+//     "INSERT INTO elementproperties SET ?",
+//     element,
+//     function (err, result) {
+//       // console.log("1 record inserted in element");
+//       if (result) {
+//         console.log("New Properties Added");
+//       }
+//     }
+//   );
+// });
 
-module.exports = { connect, insertData };
+// users.map((user) => {
+//   con.query("INSERT INTO project_users SET ?", user, function (
+//     err,
+//     result
+//   ) {
+//     // console.log(result);
+//     // console.log("1 record inserted in element");
+//   });
+// });
+
+function sqlElement() {
+  return new Promise((resolve, reject) => {
+    sql.query("SELECT * FROM project_name", function (err, result, fields) {
+      if (err) throw err;
+
+      resolve(result);
+      console.log(result);
+    });
+  });
+}
+
+// await projects.map((project) => {
+//   const request = new sql.Request();
+
+//   request
+//     .input("projectID", sql.VarChar(255), project.projectID)
+//     .input("projectName", sql.VarChar(255), project.projectName)
+//     .query(
+//       "INSERT INTO project_name(projectID, projectName) VALUES (@projectID , @projectName)",
+//       (err, result) => {
+//         if (err) console.log(err);
+//         console.log(result);
+//       }
+//     );
+// });
